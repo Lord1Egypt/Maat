@@ -1,7 +1,9 @@
 package keeper_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -94,10 +96,12 @@ func TestBridgeMsgServer(t *testing.T) {
 
 	// BridgeIn (verify Wormhole VAA mock, mints coins)
 	depositor := sdk.AccAddress([]byte("addr1")).String()
+	proofBytes := makeVAAProof(10 * pricing.MicroUSD)
 	_, err := server.BridgeIn(ctx, &types.MsgBridgeIn{
 		Depositor: depositor,
 		Denom:     "weth",
 		Amount:    10 * pricing.MicroUSD,
+		Proof:     proofBytes,
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(10*pricing.MicroUSD), bk.minted.AmountOf("weth").Int64())
@@ -111,4 +115,38 @@ func TestBridgeMsgServer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, int32(2), res.Status)
+}
+
+func makeVAAProof(amount int64) []byte {
+	var buf bytes.Buffer
+	buf.WriteByte(1) // version
+	binary.Write(&buf, binary.BigEndian, uint32(2)) // guardian set index
+	buf.WriteByte(1) // signatures length
+	buf.WriteByte(0) // guardian index
+	var dummySig [65]byte
+	buf.Write(dummySig[:])
+
+	binary.Write(&buf, binary.BigEndian, uint32(100000)) // timestamp
+	binary.Write(&buf, binary.BigEndian, uint32(42))     // nonce
+	binary.Write(&buf, binary.BigEndian, uint16(2))      // emitter chain
+	var dummyEmitter [32]byte
+	buf.Write(dummyEmitter[:])
+	binary.Write(&buf, binary.BigEndian, uint64(999))    // sequence
+	buf.WriteByte(15)                                    // consistency level
+
+	// Payload (TokenBridgeTransfer layout)
+	buf.WriteByte(1) // payload type
+	var dummyAmount [32]byte
+	binary.BigEndian.PutUint64(dummyAmount[24:32], uint64(amount))
+	buf.Write(dummyAmount[:])
+	var dummyToken [32]byte
+	buf.Write(dummyToken[:])
+	binary.Write(&buf, binary.BigEndian, uint16(2)) // token chain
+	var dummyTo [32]byte
+	buf.Write(dummyTo[:])
+	binary.Write(&buf, binary.BigEndian, uint16(1)) // to chain
+	var dummyFee [32]byte
+	buf.Write(dummyFee[:])
+
+	return buf.Bytes()
 }

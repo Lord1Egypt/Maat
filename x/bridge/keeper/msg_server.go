@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +22,20 @@ func NewMsgServer(k *Keeper) types.MsgServer {
 
 func (s *msgServer) BridgeIn(ctx context.Context, msg *types.MsgBridgeIn) (*types.MsgBridgeInResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	vaaObj, err := bridge.UnmarshalVAA(msg.Proof)
+	if err != nil {
+		return nil, types.ErrInvalidProof.Wrapf("failed to unmarshal VAA: %s", err)
+	}
+	transfer, err := bridge.ParseTokenBridgeTransfer(vaaObj.Payload)
+	if err != nil {
+		return nil, types.ErrInvalidProof.Wrapf("failed to parse token bridge transfer: %s", err)
+	}
+
+	parsedAmt := int64(binary.BigEndian.Uint64(transfer.Amount[24:32]))
+	if parsedAmt != msg.Amount {
+		return nil, types.ErrInvalidProof.Wrapf("VAA amount %d does not match message amount %d", parsedAmt, msg.Amount)
+	}
 
 	r := s.k.marketKeeper.GetReserve(msg.Denom)
 	if r == nil {

@@ -9,14 +9,14 @@
 ---
 
 ## Phase 0: Concept & Design (NOW)
-**Status: IN PROGRESS**
+**Status: COMPLETE**
 
 - [X] Define core economic model (corrected to spread-capture)
 - [X] Full documentation set
 - [X] REDESIGN.md (why v0.1 failed, how v0.2 works)
 - [X] BUILD_PLAN.md (execution plan)
-- [ ] Build Python simulation (`maat_sim.py`)
-- [ ] Community feedback on the corrected model
+- [X] Build Python simulation (`maat_sim.py`)
+- [X] Community feedback on the corrected model
 
 ---
 
@@ -24,14 +24,14 @@
 
 **Goal:** Prove the reserve **grows** before any chain code.
 
-- [ ] Build the spread-capture simulation
-- [ ] Reserve growth under realistic two-sided flow
-- [ ] Inventory-skew stress + skew-pricing fix
-- [ ] Oracle-lag / flash-crash stress
-- [ ] 1,000 Monte Carlo paths; **pass = reserve grows in ≥95%**
-- [ ] Whitepaper with results
+- [X] Build the spread-capture simulation
+- [X] Reserve growth under realistic two-sided flow
+- [X] Inventory-skew stress + skew-pricing fix
+- [X] Oracle-lag / flash-crash stress
+- [X] 1,000 Monte Carlo paths; **pass = reserve grows in ≥95%**
+- [X] Whitepaper with results
 
-**Deliverable:** Green simulation. No green, no build.
+**Deliverable:** Green simulation. (PASSED)
 
 ---
 
@@ -39,15 +39,15 @@
 
 **Goal:** Testnet that quotes mid ± spread per block.
 
-- [ ] x/maat (native coin, staking, gov)
-- [ ] x/pegged (mint/burn wrapped, backing-checked)
-- [ ] **x/oracle (multi-source TWAP)** — required
-- [ ] x/market (fixed-per-block quote + settlement + spread accrual)
-- [ ] x/reserve (track real backing, auto-pause < 100%)
-- [ ] Unit + fuzz + sim-driven solvency tests
-- [ ] 4-validator testnet; verify wETH round-trip grows reserve
+- [X] x/maat (native coin, staking, gov)
+- [X] x/pegged (mint/burn wrapped, backing-checked)
+- [X] **x/oracle (multi-source TWAP)** — required
+- [X] x/market (fixed-per-block quote + settlement + spread accrual)
+- [X] x/reserve (track real backing, auto-pause < 100%)
+- [X] Unit + fuzz + sim-driven solvency tests
+- [X] 4-validator testnet; verify wETH round-trip grows reserve
 
-**Deliverable:** Testnet where the reserve provably grows.
+**Deliverable:** Testnet where the reserve provably grows. (COMPLETE)
 
 ---
 
@@ -120,8 +120,8 @@
 
 ```
 Phase 0 > Phase 1(GATE) > Phase 2 > Phase 3 > Phase 4 > Phase 5 > Phase 6 > Phase 7
-   [##.......]
-   ^ YOU ARE HERE
+   [####################............]
+                                    ^ YOU ARE HERE
 ```
 
-Next concrete step: **Build `simulation/maat_sim.py` and pass the stop-gate.**
+Next concrete step: **Integrate Wormhole (EVM chains) for cross-chain flow (Phase 3).**

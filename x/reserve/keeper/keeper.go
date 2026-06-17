@@ -51,7 +51,7 @@ func (k *Keeper) IsMarketHalted() bool { return k.halted }
 
 func (k *Keeper) SetMarketHalted(halted bool) { k.halted = halted }
 
-func (k Keeper) EndBlockCheck() bool {
+func (k *Keeper) EndBlockCheck() bool {
 	allHealthy := k.AllHealthy()
 	k.halted = !allHealthy
 	return allHealthy

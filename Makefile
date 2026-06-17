@@ -6,8 +6,8 @@
 test: chain-test sim ## run all verification (Go core + economic gate)
 	@echo "ALL CHECKS PASSED"
 
-chain-test: ## Go: vet + unit/integration tests for the deterministic cores
-	cd chain && go vet ./... && go test ./... -count=1
+chain-test: ## Go: vet + unit/integration tests for the entire project
+	go vet ./... && go test ./... -count=1
 
 sim: ## Python: economic stop-gate (synthetic)
 	python3 simulation/maat_sim.py --paths 1000 --seed 42

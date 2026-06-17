@@ -18,6 +18,7 @@ it.
 | `pricing/market.go` | `x/market` + `x/reserve` | `MakeQuote` (mid ± vol/skew-adjusted spread, fixed per block), `BuyWrapped`/`SellWrapped` (spread accrual + backing checks), `BridgeIn`/`BridgeOut` (1:1 custody). |
 | `bridge/limits.go` | `x/bridge` | Bridge-out safety (Risk #1): rolling per-asset withdrawal cap + delay queue (large withdrawals held `DelayBlocks`, cancellable by governance). |
 | `treasury/fees.go` | `x/treasury` | Deterministic spread/fee distribution (ECONOMICS.md splits); rounding remainder → reserve so no micro-unit leaks. |
+| `governance/tally.go` | `x/gov` | Proposal tally rules (PLANNED_ECONOMY): quorum, approval, emergency fast-track. |
 | `scenario/scenario.go` | (integration) | Wires all cores through a deterministic multi-block run; asserted by `scenario_test.go`. |
 | `cmd/demo/main.go` | (demo) | `go run ./cmd/demo` — runnable end-to-end proof the cores work together. |
 

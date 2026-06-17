@@ -39,7 +39,9 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #7 | `feat:` end-to-end integration scenario + demo + `make test` runner | ✅ Merged |
 | #8 | `docs:` WHITEPAPER.md (synthesis + Phase 1 deliverable) | ✅ Merged |
 | #9 | `test:` Go fuzz tests for safety invariants | ✅ Merged |
-| #10 | `feat:` MAAT token core (x/maat) — vesting + inflation | ⏳ This PR |
+| #10 | `feat:` MAAT token core (x/maat) — vesting + inflation | ✅ Merged |
+| #11 | `docs:` x/* module integration spec (SDK wiring guide) | ✅ Merged |
+| #12 | `feat:` governance tally core (x/gov) | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
@@ -92,10 +94,15 @@ both models:
     deterministic run (test asserts backing ≥100%, spread captured, fund split, cap throttles);
     `chain/cmd/demo` is the runnable proof; `make test` runs Go + the economic gate in one shot.
     Demo result: backing held 100%, ~$21.6k spread captured, 60/240 bridge-outs throttled.
-  - ⏭️ NEXT: wrap the cores in actual Cosmos SDK modules — proto/Msg types, keepers, genesis,
-    params, EndBlock oracle wiring — then the `x/bridge` Wormhole transport. These are
-    mechanical wrappers around the verified cores. A full SDK chain can't be compiled/verified
-    in this sandbox, so build/verify it in a Go+ignite environment.
+  - ✅ Governance tally core (`governance/tally.go`, `x/gov`): quorum/approval/emergency
+    rules from PLANNED_ECONOMY, tested.
+  - ✅ SDK wiring guide written: `chain/MODULE_SPEC.md` (per-module state/params/msgs/
+    EndBlock + exact core call).
+  - ⏭️ NEXT (needs a Go+ignite env, not this sandbox): scaffold the actual SDK modules per
+    MODULE_SPEC — proto/Msg types, keepers, genesis, EndBlock wiring, Wormhole transport.
+    All money logic is already implemented + tested in `chain/`; this is mechanical plumbing.
+    The verifiable core of Ma'at (token, oracle, market, reserve, bridge, treasury,
+    governance + sim + whitepaper + CI + fuzz) is COMPLETE.
 
 (See [BUILD_PLAN.md](BUILD_PLAN.md) for the full phased plan and stop-gate rules.)
 

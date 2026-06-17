@@ -34,7 +34,8 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #2 | `feat:` economic stop-gate simulation + first CI/CD pipeline | ✅ Merged |
 | #3 | `docs:` STATUS.md continuation/handoff doc | ✅ Merged |
 | #4 | `feat:` calibration vs real ETH data + real-data CI gate | ✅ Merged |
-| #5 | `feat:` deterministic Go pricing core (x/oracle + x/market) + Go CI | ⏳ This PR |
+| #5 | `feat:` deterministic Go pricing core (x/oracle + x/market) + Go CI | ✅ Merged |
+| #6 | `feat:` bridge withdrawal caps/delay queue + treasury fee splits | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
@@ -78,10 +79,13 @@ both models:
     unit tests passing, Go CI job added): `oracle.go` (median + deviation guard + EMA TWAP
     + breaker) and `market.go` (quote = mid ± vol/skew spread; buy/sell with spread accrual
     + backing checks; 1:1 bridge in/out). Decoupled from the SDK so it's fully testable.
-  - ⏭️ NEXT: wrap the core in actual Cosmos SDK modules — proto/Msg types, keepers, genesis,
-    params, EndBlock oracle wiring — then `x/bridge` (Wormhole). These are mechanical
-    wrappers around the verified core. A full SDK chain can't be compiled/verified in this
-    sandbox, so build/verify it in a Go+ignite environment.
+  - ✅ Protection cores (Go, tested): `bridge/limits.go` (per-asset withdrawal cap + delay
+    queue with cancel — Risk #1) and `treasury/fees.go` (ECONOMICS fee splits, leak-free).
+    All 3 packages green in CI (`go test ./...`).
+  - ⏭️ NEXT: wrap the cores in actual Cosmos SDK modules — proto/Msg types, keepers, genesis,
+    params, EndBlock oracle wiring — then the `x/bridge` Wormhole transport. These are
+    mechanical wrappers around the verified cores. A full SDK chain can't be compiled/verified
+    in this sandbox, so build/verify it in a Go+ignite environment.
 
 (See [BUILD_PLAN.md](BUILD_PLAN.md) for the full phased plan and stop-gate rules.)
 

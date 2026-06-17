@@ -15,6 +15,8 @@ it.
 |------|----------------|----------------|
 | `pricing/oracle.go` | `x/oracle` | Median of de-outliered sources → integer-EMA TWAP `Mid`, with a deviation guard and a circuit breaker that halts on implausible jumps. |
 | `pricing/market.go` | `x/market` + `x/reserve` | `MakeQuote` (mid ± vol/skew-adjusted spread, fixed per block), `BuyWrapped`/`SellWrapped` (spread accrual + backing checks), `BridgeIn`/`BridgeOut` (1:1 custody). |
+| `bridge/limits.go` | `x/bridge` | Bridge-out safety (Risk #1): rolling per-asset withdrawal cap + delay queue (large withdrawals held `DelayBlocks`, cancellable by governance). |
+| `treasury/fees.go` | `x/treasury` | Deterministic spread/fee distribution (ECONOMICS.md splits); rounding remainder → reserve so no micro-unit leaks. |
 
 Units: prices in **micro-USD** (1 USD = 1_000_000), spreads/ratios in **bps**.
 

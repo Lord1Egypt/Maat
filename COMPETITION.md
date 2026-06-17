@@ -1,105 +1,88 @@
-# COMPETITION.md - Market Landscape
+# COMPETITION.md - Market Landscape (v0.2)
 
-> Who Else Is Doing This? (Nobody. Heres Why.)
+> Where Ma'at sits, honestly. It competes on **fair execution + spread efficiency +
+> transparent reserves + cross-chain reach** — not on "free money."
+
+> ⚠️ v0.1 claimed "no oracle needed" and "zero competition." Both were wrong. Ma'at uses a
+> hardened oracle, and it competes directly with RFQ/MEV-resistant venues. See [REDESIGN.md](REDESIGN.md).
 
 ---
 
-## The Landscape: A Unique Niche
+## The Category
 
-Ma'at occupies a space no other project fully occupies:
-- **Not a DEX** (no AMM, no order book)
-- **Not a bridge** (bridges are the transport, not the destination)
-- **Not a stablecoin** (multi-asset, not pegged to USD)
-- **Not a CeFi exchange** (permissionless, on-chain)
-
-**Ma'at is a new category:** Protocol-Governed Price Discovery Layer
+Ma'at is an **MEV-free, oracle-priced, reserve-backed cross-chain exchange.** Its closest
+analogues are RFQ/market-maker venues and batch-auction DEXs — but on its own L1 with a
+single fixed-per-block clearing price and a reserve that earns the spread.
 
 ---
 
 ## Direct Comparisons
 
-### 1. Uniswap / Curve / DEXs
+### 1. Uniswap / Curve (AMMs)
 
 | Feature | Uniswap | Ma'at |
 |---------|---------|-------|
-| Pricing | AMM (supply/demand) | Fixed (protocol-set) |
-| Slippage | Yes, on large trades | Zero |
-| MEV | Severe (sandwich attacks) | Non-existent |
-| Oracle needed | Yes (TWAP) | No |
-| Liquidity source | LP deposits | Protocol reserve |
-| Impermanent loss | Yes | Not applicable |
+| Pricing | AMM curve (moves every trade) | Oracle mid ± spread, fixed per block |
+| Slippage | Yes, grows with size | Zero |
+| MEV | Severe (sandwiches) | Non-existent |
+| Liquidity source | LP deposits (suffer IL) | Protocol reserve (no IL) |
+| Who earns the spread | LPs (net of IL) | Reserve (compounds) |
 
-**Advantage Ma'at:** Predictable prices, no MEV, no IL for LPs (there are no LPs).
+**Edge:** no slippage, no MEV, no IL.
 
-### 2. Binance / Coinbase (CeFi)
+### 2. CoW Protocol / Hashflow / 0x RFQ (the real competitors)
+
+| Feature | CoW / RFQ | Ma'at |
+|---------|-----------|-------|
+| MEV protection | Yes (batch/RFQ) | Yes (fixed per block) |
+| Pricing | Solver/MM quotes | Native oracle ± spread |
+| Settlement | On host chain | Native L1 + reserve |
+| Cross-chain | Limited | Native multi-chain |
+| Reserve transparency | n/a | Live, on-chain |
+
+**Edge:** native cross-chain settlement + transparent reserve in one place. **Honest
+weakness:** these are credible, funded competitors — execution and liquidity decide.
+
+### 3. Binance / Coinbase (CeFi)
 
 | Feature | CeFi | Ma'at |
 |---------|------|-------|
-| Pricing | Order book (market) | Fixed (protocol) |
+| Pricing | Order book | Oracle ± spread |
 | Custody | Centralized | Multi-sig + validators |
-| Permissionless? | KYC required | No KYC |
-| Listed assets | Exchange decides | Governance decides |
-| Transparent? | No | Fully on-chain |
+| Permissionless | KYC | No KYC (ramps via licensed partners) |
+| Transparent | No | Fully on-chain |
 
-**Advantage Ma'at:** Transparency, permissionless, innovative pricing model.
+**Edge:** transparency + permissionless. **Weakness:** liquidity depth.
 
-### 3. Terra (LUNA/UST) - The Cautionary Tale
+### 4. Terra (LUNA/UST) — the cautionary tale we DON'T repeat
 
-| Feature | Terra | Ma'at |
-|---------|-------|-------|
-| Peg | 1 asset (UST=$1) | Multi-asset (any price) |
-| Reserve | Algorithmic (UST/LUNA mint/burn) | Real assets (1:1+ backing) |
-| Price changes | Every block (free market) | Scheduled (announced) |
-| Transparency | Opaque (LFG) | Full on-chain |
-| Cause of death | Bank run + algo depeg | Reserve model prevents peg break |
+| Feature | Terra | Ma'at v0.2 |
+|---------|-------|-----------|
+| Backing | Algorithmic (own token) | Real assets 1:1+ |
+| Price | Defended an off-market peg | Tracks market (oracle ± spread) |
+| Drain vector | Arb against the peg | None — protocol earns the spread |
 
-**Advantage Ma'at:** Real reserves, multi-asset, announced schedule, circuit breakers.
+> Ma'at **v0.1 shared Terra's flaw** (off-market price drained by arb). v0.2 removes it.
 
-### 4. Thorchain
+### 5. Thorchain
 
 | Feature | Thorchain | Ma'at |
 |---------|-----------|-------|
-| Model | Cross-chain AMM | Fixed-price exchange |
+| Model | Cross-chain AMM | Fixed-per-block oracle exchange |
 | Slippage | Yes | Zero |
 | MEV | Possible | Impossible |
-| Liquidity | LP pools | Protocol reserve |
-| Fees | Variable | Fixed (0.3%) |
-| Pricing | Market-driven | Protocol-governed |
-
-**Advantage Ma'at:** Zero slippage, no MEV, simpler architecture.
-
-### 5. Cosmos IBC + Osmosis
-
-| Feature | Osmosis | Ma'at |
-|---------|---------|-------|
-| Ecosystem | Cosmos-only | Multi-chain |
-| Pricing | AMM | Fixed |
-| Governance | Token holders | Token holders |
-| Novelty | Superfluid staking | Scheduled pricing |
-
-**Advantage Ma'at:** Cross-EVM + Bitcoin + Solana, not just Cosmos.
-
-### 6. LayerZero / Stargate
-
-| Feature | Stargate | Ma'at |
-|---------|----------|-------|
-| Model | Omnichain bridge | Full exchange |
-| Pricing | Market-driven | Fixed |
-| Swaps | Bridge + DEX needed | Native swap |
-| Liquidity | Pool per chain | Central reserve |
-
-**Advantage Ma'at:** All-in-one: bridge + exchange + price discovery.
+| Liquidity | LP pools (IL) | Reserve (no IL) |
 
 ---
 
-## Why Nobody Has Done This
+## Why This Is Hard (honest)
 
-| Reason | Explanation | Ma'ats Answer |
-|--------|-------------|---------------|
-| Crypto orthodoxy | Fixed prices = not crypto | Challenge orthodoxy |
-| Risk perception | Terra trauma | Real reserves != algo |
-| Complexity | Cross-chain is hard | Battle-tested bridges |
-| Liquidity bootstrapping | Cold start problem | Intentional arb = demand |
+| Challenge | Reality | Ma'at's Answer |
+|-----------|---------|----------------|
+| Bridge risk | #1 hack vector | Battle-tested bridges, caps, insurance |
+| Oracle robustness | Mandatory | Multi-source TWAP + breakers |
+| Liquidity bootstrap | Cold start | Seed inventory + remittance demand |
+| Funded competitors | Real | Compete on cross-chain + transparency + spread |
 
 ---
 
@@ -107,20 +90,20 @@ Ma'at occupies a space no other project fully occupies:
 
 | Metric | Current Market | Ma'at Target |
 |--------|---------------|--------------|
-| DEX monthly volume | ~$100B | Capture 1% = $1B |
-| Cross-chain bridge TVL | ~$20B | Capture 5% = $1B |
-| CeFi exchange volume | ~$1T | Differentiation |
-| Total addressable | $100B+ | Fixed-price niche |
+| DEX monthly volume | ~$100B | Capture a slice on execution quality |
+| Cross-chain bridge TVL | ~$20B | Reserve-backed settlement share |
+| Egypt remittances | ~$30B/yr | Non-speculative, recurring volume |
 
-**Key insight:** Ma'at doesnt need to beat Ethereum or Binance. It just needs to be
-the BEST place for one specific thing: **predictable cross-chain asset exchange.**
+**Key insight:** Ma'at wins by being the **best place for predictable, MEV-free cross-chain
+settlement** — not by promising free profit.
 
 ---
 
 ## Competitive Moat
 
-1. **First-mover**: No other chain has "scheduled price changes" as a feature
-2. **Network effects**: More TVL -> better arb -> more users -> more TVL
-3. **Reserve trust**: Proven 1:1+ backing, transparent, audited
-4. **Simplicity**: No AMM math, no MEV games, no IL calculations
-5. **Brand**: Egyptian central-bank philosophy stands out in crypto
+1. **Microstructure**: fixed-per-block clearing price (no MEV, no slippage, no IL)
+2. **Reserve that compounds**: spread accrues to backing, not to LPs with IL
+3. **Transparency**: live, audited reserves vs opaque CeFi
+4. **Cross-chain native**: bridge + exchange + settlement in one
+5. **Remittance beachhead**: real demand from the Egyptian corridor
+6. **Brand**: Egyptian order-and-discipline philosophy

@@ -1,39 +1,43 @@
-# SIMULATION.md - Economic Model
+# SIMULATION.md - Economic Model (v0.2)
 
-> Python simulation to prove the economics before writing blockchain code.
+> Python simulation to prove the economics **before** writing blockchain code.
+> The pass condition changed: the reserve must **grow**, not merely "survive."
+
+> ⚠️ v0.1 asked "can the reserve survive a bank run?" — the honest v0.1 answer was "no,
+> it drains by design." v0.2 asks the right question: does the spread-capture reserve
+> compound under realistic flow? See [REDESIGN.md](REDESIGN.md).
 
 ---
 
 ## Purpose
 
-Before writing a single line of Cosmos SDK, we simulate the Ma'at economy
-to answer critical questions:
+Before writing a single line of Cosmos SDK, we simulate the Ma'at economy to answer:
 
-1. Does the arb engine actually attract users?
-2. Can the reserve survive a bank run?
-3. What happens to MAAT price in bull vs bear markets?
-4. What is the optimal price spread?
+1. Does the spread engine make the reserve **grow** under realistic two-sided flow?
+2. How bad does **inventory imbalance** get under one-sided flow, and does skew-pricing fix it?
+3. What is the worst-case loss from **oracle lag** during a flash crash?
+4. What spread maximizes (volume × spread) revenue without killing volume?
 
 ---
 
 ## Simulation Model
 
 The simulation models:
-- **Market prices**: Real historical BTC/ETH price data
-- **Ma'at prices**: Protocol-set prices that change on schedule
-- **Arb bots**: Automated agents that exploit the spread
-- **MAAT supply/demand**: How arb affects native coin
-- **Reserve ratio**: Real assets backing wrapped tokens
+- **Market mid**: real historical BTC/ETH price data + synthetic shocks
+- **Ma'at quote**: mid ± spread, fixed per block, with vol/inventory adjustment
+- **Oracle lag**: quote follows mid with realistic delay
+- **Flow**: arb bots (close gap to mid), retail (random), one-sided stress
+- **Reserve & inventory**: real backing + spread accrual + skew
 
 ### Key Variables
 
 | Variable | Range | Default |
 |----------|-------|---------|
-| Price spread | 1-20% | 5% |
-| Announcement delay | 1-30 days | 7 days |
-| Withdrawal cap | 1-100% of reserve | 10% daily |
-| Reserve ratio target | 100-150% | 120% |
-| Fee rate | 0.1-1% | 0.3% |
+| Base spread (each side) | 5-50 bps | 15 bps |
+| Oracle lag | 1-30 blocks | 5 blocks |
+| Vol multiplier | 1-5x | dynamic |
+| Inventory cap | 5-50% of reserve | 20% |
+| Reserve buffer target | 100-150% | 115% |
 
 ---
 
@@ -42,39 +46,38 @@ The simulation models:
 ```bash
 cd simulation
 pip install numpy pandas matplotlib
-python arb_model.py --days 90 --spread 0.05 --output charts/
+python maat_sim.py --days 90 --base-spread 0.0015 --paths 1000 --output charts/
 ```
 
 ---
 
 ## Planned Charts
 
-1. Arb volume vs spread percentage
-2. Reserve depletion over time (bank run scenario)
-3. MAAT price correlation with TVL
-4. Cumulative protocol revenue over time
-5. Optimal spread for max TVL growth
+1. Reserve value over time (must trend **up**)
+2. Daily spread revenue vs base spread
+3. Inventory skew over time (with vs without skew-pricing)
+4. Worst-case loss during a 50% flash crash (oracle lag stress)
+5. Revenue surface: spread × volume
 
 ---
 
-## Expected Results
+## Pass / Fail Gate (the stop-gate)
 
-Based on economic modeling:
+| Test | Pass condition |
+|------|----------------|
+| 1,000 Monte Carlo paths | Reserve ends ≥ start in **≥95%** of paths |
+| Flash-crash stress | Backing stays ≥ 100% with breakers on |
+| One-sided flow | Skew-pricing keeps inventory under cap |
+| Revenue | Net spread revenue > simulated infra cost |
 
-| Scenario | Result | Confidence |
-|----------|--------|-----------|
-| 5% spread, 7d delay | 10% TVL growth/week | High |
-| Bank run (no cap) | Reserve empty in 3 days | Validated warning |
-| Bank run (with 10% cap) | Reserve stays above 100% | Moderate |
-| Bear market | Reserve accumulates cheap assets | High |
-| Bull market | MAAT demand grows with arb volume | High |
+**If no parameter set passes → the model is wrong. Do not build. Iterate first.**
 
 ---
 
 ## Next Steps
 
-1. Implement simulation in Python
-2. Run 1000 monte carlo simulations
-3. Find the optimal parameter set
+1. Implement `maat_sim.py`
+2. Run 1,000 Monte Carlo paths
+3. Find the optimal spread/lag/skew parameter set
 4. Document in whitepaper
-5. Then build the real chain
+5. Only then build the real chain (see [BUILD_PLAN.md](BUILD_PLAN.md))

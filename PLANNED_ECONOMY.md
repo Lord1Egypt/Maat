@@ -1,89 +1,87 @@
 # PLANNED_ECONOMY.md
 
-> How Price Setting Works - The Detailed Mechanics
+> How Pricing Works — The Detailed Mechanics (v0.2)
+
+> ⚠️ Corrected from v0.1. Ma'at does **not** quote an arbitrary fixed price, and it does
+> **not** run without an oracle. It quotes **oracle mid ± spread, fixed per block**.
+> See [REDESIGN.md](REDESIGN.md) for why the old "we ARE the oracle" model self-destructs.
 
 ---
 
 ## 1. The Core Mechanism
 
-### 1.1 The Protocol IS the Oracle
+### 1.1 The Protocol Reads a Robust Oracle, Then Fixes the Price Per Block
 
-Ma'at does not use external oracles (Chainlink, etc.). Every block stores:
+Ma'at uses a hardened multi-source TWAP oracle (the price *source*), then exposes a single
+clearing price per block (the *execution* guarantee). Every block stores:
 
 ```
-state.asset_prices["wBTC"] = {
-    price: 90000,
-    effective_block: 123456,
-    announced_block: 123400,
-    next_price: 95000,
-    next_effective_block: 130000,
+state.asset_quote["wBTC"] = {
+    mid:        100000,     // robust multi-source TWAP
+    spread_bps: 15,         // each side, governance-set, vol/inventory-adjusted
+    buy:        99850,      // mid * (1 - spread)   protocol buys from user
+    sell:       100150,     // mid * (1 + spread)   protocol sells to user
+    block:      123456,
 }
 ```
 
-### 1.2 Mint/Burn at Protocol Price
+The price is **fixed for the whole block** → no intra-block reordering can change it →
+no slippage, no sandwich, no MEV. It **tracks the market** → the reserve never bleeds.
+
+### 1.2 Mint/Burn at the Quote
 
 ```
-User sends 1 wBTC:
-  1. Read fixed price ($90,000)
-  2. Burn wBTC
-  3. Credit user 90,000 MAAT
+User sells 1 wBTC (protocol buys):
+  1. Read buy price (99,850)
+  2. Burn wBTC, credit user 99,850 (MAAT-equivalent)
+  3. Reserve keeps the asset acquired below mid -> +spread
 
-User sends 90,000 MAAT:
-  1. Read fixed price ($90,000)
-  2. Check reserve has real BTC
-  3. Debit 90,000 MAAT
-  4. Mint 1 wBTC
+User buys 1 wBTC (protocol sells):
+  1. Read sell price (100,150)
+  2. Check backing exists
+  3. Debit 100,150, release/mint 1 wBTC -> +spread
 ```
 
-No slippage. No spread. No MEV.
+No slippage. No spread *given away*. No MEV. The protocol earns the spread.
 
-## 2. The Announcement Cycle
-
-```
-Default cycle: 30 days
-
-Day 0:   Price = $90,000 (current)
-Day 1:   Announce NEXT price = $95,000 (effective Day 30)
-Day 1-29: Market adjusts, users plan, arb flows
-Day 30:  Price changes to $95,000
-Day 31:  Announce next price...
-```
-
-## 3. How Users Exploit the Schedule
-
-### 3.1 Next Price HIGHER than Current
+## 2. The Oracle (mandatory, not optional)
 
 ```
-Current = $90,000, Next = $95,000 (in 29 days)
-- Buy wBTC NOW at $90,000
-- Hold 29 days
-- Price becomes $95,000
-- Sell wBTC for $95,000 MAAT
-- Profit = $5,000/BTC
+mid = TWAP across >= 3 independent venues (e.g., Binance, Coinbase, on-chain DEX TWAP)
+- Median of sources to resist a single manipulated feed
+- Time-weighted to resist flash spikes
+- Deviation guard: if a source deviates > X% it is dropped
+- Circuit breaker: if mid moves > 50% in 1h, freeze quotes for review
 ```
 
-### 3.2 Next Price LOWER than Current
+"Being the oracle" is dropped entirely — that claim is what guaranteed insolvency.
+
+## 3. Predictability: The Spread Schedule
+
+What Ma'at commits to in advance is **how it prices**, not a future off-market price:
 
 ```
-Current = $95,000, Next = $90,000 (in 29 days)
-- SELL wBTC NOW at $95,000
-- Get 95,000 MAAT
-- Wait for drop
-- Buy back wBTC at $90,000
-- Profit = $5,000/BTC
+Published:
+- Base spread per asset
+- Volatility-scaling formula
+- Inventory-skew formula
+- Update cadence (per block) and circuit-breaker thresholds
 ```
 
-## 4. Price Change Types
+This gives users total clarity about execution **without** writing free options to the
+market (pre-announcing a future fixed price is a free call/put — see REDESIGN §1.3).
+
+## 4. Quote Adjustment Types
 
 | Type | Description | Use Case |
 |------|-------------|---------|
-| Fixed Reprice | Move to new fixed value | Normal adjustments |
-| Percentage | Move by X% | Following market trends |
-| Market-Relative | Peg: Market - 2% | Safety mode, constant arb |
-| Staircase | Volume-tiered pricing | Whale discounts |
-| Emergency Freeze | Pause all trading 48h | Circuit breaker |
+| Flat spread | Fixed bps each side | Calm markets |
+| Volatility-scaled | Spread grows with realized vol | Turbulent markets |
+| Inventory-skewed | Quotes tilt to pull inventory back to target | One-sided flow |
+| Emergency widen | Spread jumps to deter toxic flow | Stress |
+| Emergency Freeze | Pause all quotes 48h | Circuit breaker |
 
-## 5. Price Change Governance
+## 5. Governance
 
 ### 5.1 Who Can Propose
 
@@ -93,12 +91,12 @@ Any MAAT staker with >= 100,000 MAAT delegated.
 
 ```json
 {
-  "title": "wBTC: $90K -> $95K",
+  "title": "wBTC base spread: 15bps -> 12bps",
   "asset": "wBTC",
-  "current_price": 90000,
-  "new_price": 95000,
-  "effective_delay_blocks": 300000,
-  "rationale": "Market recovering, BTC up 15%"
+  "param": "base_spread_bps",
+  "current": 15,
+  "new": 12,
+  "rationale": "Deep reserve, high competition, capture more volume"
 }
 ```
 
@@ -114,8 +112,8 @@ Any MAAT staker with >= 100,000 MAAT delegated.
 ### 5.4 Emergency Powers
 
 Security Council (7-of-12 multi-sig) can:
-- Pause all trading (circuit breaker)
-- Force price freeze for up to 48 hours
+- Pause all quotes (circuit breaker)
+- Force-widen spreads
 - Trigger emergency reserve rebalancing
 
 Powers are audited, time-limited, and publicly logged.

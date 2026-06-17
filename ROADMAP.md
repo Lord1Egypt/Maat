@@ -1,174 +1,127 @@
-# ROADMAP.md - Phased Execution Plan
+# ROADMAP.md - Phased Execution Plan (v0.2)
 
-> From Concept to Dominance
+> From Concept to a Sustainable Exchange.
+> Detailed execution lives in [BUILD_PLAN.md](BUILD_PLAN.md); this is the high-level view.
+
+> ⚠️ v0.2: launch is as a **market maker (mid ± spread)**, not a faucet. The old
+> "bootstrap at 10% below market" step was the drain — removed. See [REDESIGN.md](REDESIGN.md).
 
 ---
 
 ## Phase 0: Concept & Design (NOW)
 **Status: IN PROGRESS**
 
-- [X] Define core economic model
-- [X] Create repository with full documentation
-- [X] Write VISION.md (philosophy)
-- [X] Write ECONOMICS.md (tokenomics)
-- [X] Write PLANNED_ECONOMY.md (price mechanics)
-- [X] Write ARCHITECTURE.md (technical design)
-- [X] Write RISKS.md (honest disclosure)
-- [X] Write COMPETITION.md (market comparison)
-- [ ] Build Python simulation model (arb engine simulation)
-- [ ] Get community feedback on concept
+- [X] Define core economic model (corrected to spread-capture)
+- [X] Full documentation set
+- [X] REDESIGN.md (why v0.1 failed, how v0.2 works)
+- [X] BUILD_PLAN.md (execution plan)
+- [ ] Build Python simulation (`maat_sim.py`)
+- [ ] Community feedback on the corrected model
 
 ---
 
-## Phase 1: Simulation (Month 1)
+## Phase 1: Simulation (Month 1) — STOP-GATE
 
-**Goal:** Prove the economics work before writing any blockchain code.
+**Goal:** Prove the reserve **grows** before any chain code.
 
-- [ ] Build Python simulation of arb engine
-- [ ] Simulate: 30 days of arb with various spreads
-- [ ] Simulate: Bank run scenario (reserve depletion)
-- [ ] Simulate: Bull market vs bear market behavior
-- [ ] Simulate: MAAT price discovery model
-- [ ] Write whitepaper with simulation results
-- [ ] Publish simulation results for community review
-- [ ] Iterate economic model based on simulation findings
+- [ ] Build the spread-capture simulation
+- [ ] Reserve growth under realistic two-sided flow
+- [ ] Inventory-skew stress + skew-pricing fix
+- [ ] Oracle-lag / flash-crash stress
+- [ ] 1,000 Monte Carlo paths; **pass = reserve grows in ≥95%**
+- [ ] Whitepaper with results
 
-**Deliverable:** whitepaper.md + simulation/ folder with reproducible notebooks
+**Deliverable:** Green simulation. No green, no build.
 
 ---
 
 ## Phase 2: Cosmos SDK Chain (Month 2)
 
-**Goal:** Running blockchain with basic modules.
+**Goal:** Testnet that quotes mid ± spread per block.
 
-- [ ] Initialize Cosmos SDK project
-- [ ] Implement x/maat module (native coin, staking, governance)
-- [ ] Implement x/pegged module (mint/burn wrapped assets)
-- [ ] Implement x/price module (fixed prices + schedule)
-- [ ] Implement x/reserve module (track real reserves)
-- [ ] Implement x/treasury module (fee collection)
-- [ ] Write unit tests for all modules
-- [ ] Deploy testnet with 4 validators
-- [ ] Verify basic swap flow: MAAT <-> wETH
+- [ ] x/maat (native coin, staking, gov)
+- [ ] x/pegged (mint/burn wrapped, backing-checked)
+- [ ] **x/oracle (multi-source TWAP)** — required
+- [ ] x/market (fixed-per-block quote + settlement + spread accrual)
+- [ ] x/reserve (track real backing, auto-pause < 100%)
+- [ ] Unit + fuzz + sim-driven solvency tests
+- [ ] 4-validator testnet; verify wETH round-trip grows reserve
 
-**Deliverable:** Testnet with swap functionality
+**Deliverable:** Testnet where the reserve provably grows.
 
 ---
 
 ## Phase 3: Ethereum Bridge (Month 2-3)
 
-**Goal:** Real cross-chain flow with Ethereum.
+**Goal:** Real cross-chain flow, done safely.
 
-- [ ] Deploy Wormhole contract on Ethereum testnet
-- [ ] Integrate Wormhole VAAs into x/bridge module
-- [ ] Test: Lock ETH on Sepolia -> mint wETH on Ma'at testnet
-- [ ] Test: Burn wETH on Ma'at -> release ETH on Sepolia
-- [ ] End-to-end arb test: Buy wETH cheap -> bridge out -> sell on Ethereum
-- [ ] Security audit of bridge integration
-- [ ] Deploy to Ethereum mainnet (limited, audited)
+- [ ] Integrate Wormhole (battle-tested, not custom)
+- [ ] Sepolia: lock ETH → mint wETH; burn wETH → release ETH
+- [ ] Daily caps, large-tx delay/cancel, per-bridge multisig
+- [ ] **Independent audit of bridge integration**
 
-**Deliverable:** wETH flows cross-chain
+**Deliverable:** Audited, capped wETH bridge.
 
 ---
 
-## Phase 4: Bootstrap Launch (Month 3)
+## Phase 4: Guarded Mainnet Launch (Month 3)
 
-**Goal:** First real users and TVL.
+**Goal:** First users — as a market maker, not a faucet.
 
-- [ ] Launch Ma'at mainnet
-- [ ] Bootstrap with ETH (10% below market price)
-- [ ] 1-week announcement: "wETH at 10% discount starting Day 8"
-- [ ] Marketing push: "Guaranteed arb on Day 8"
-- [ ] Deploy MAAT token on Ethereum (ERC-20 representation)
-- [ ] List MAAT on Uniswap for initial price discovery
-- [ ] Airdrop to active DeFi users (Snapshot of top 10K addresses)
-- [ ] Monitor first arb flows
-- [ ] Verify reserve ratio stays healthy
+- [ ] Seed reserve inventory
+- [ ] Quote wETH at mid ± spread; pitch = MEV-free best execution + live reserve
+- [ ] Live reserve dashboard; publish spread curve + cadence
+- [ ] Airdrop to active DeFi users; conservative caps
 
-**Metrics:**
-- [ ] $1M+ TVL within 30 days
-- [ ] >100 unique swappers per day
-- [ ] Reserve ratio > 110% at all times
-- [ ] No bank run events
+**Metrics:** reserve trending up · backing ≥ 110% always · spread revenue > infra cost · no bridge incident
 
 ---
 
-## Phase 5: Asset Expansion (Month 4-6)
+## Phase 5: Remittance Corridor + Asset Expansion (Month 4-8)
 
-**Goal:** Multi-asset cross-chain exchange.
+**Goal:** Recurring real revenue + multi-asset.
 
-- [ ] Add wBTC (threshold-sig bridge)
-- [ ] Add USDC + USDT (stablecoins at 1:1)
-- [ ] Add wSOL (Solana via Wormhole)
-- [ ] IBC integration for Cosmos ecosystem
-- [ ] Add 10+ additional EVM assets
-- [ ] Price tiering for whales (volume discounts)
-- [ ] Gas optimization for high-frequency trading
+- [ ] Egypt $30B corridor: Arabic app, 0.3%, licensed ramp partners
+- [ ] Add wBTC (audited threshold-sig), stables, wSOL, IBC
+- [ ] Vol/inventory-adjusted spreads; whale tiers
+- [ ] Reserve index (on-chain ETF, transparent NAV)
 
-**Metrics:**
-- [ ] $10M+ TVL
-- [ ] 5+ assets trading
-- [ ] $1M+ daily volume
-- [ ] Revenue: $3K+/day in fees
+**Metrics:** $10M+ reserve · 5+ assets · $1M+ daily volume · revenue > $3K/day
 
 ---
 
-## Phase 6: Governance Maturity (Month 6-9)
+## Phase 6: Governance Maturity (Month 8-12)
 
-**Goal:** DAO-driven, decentralized price setting.
+**Goal:** DAO-driven spreads, caps, listings.
 
-- [ ] Full governance for price proposals
-- [ ] Price oracle module (MAAT price feeds for DeFi)
-- [ ] Staking rewards optimization
-- [ ] Validator incentives aligned with reserve health
-- [ ] Insurance fund growth to 5% of TVL
-- [ ] Bug bounty program launch
-- [ ] Security council rotation
+- [ ] Full governance for spread/param proposals
+- [ ] MAAT price feed for external DeFi (once deep + trusted)
+- [ ] Insurance fund to 5% of reserve
+- [ ] Bug bounty + security council rotation
+- [ ] Legitimate Pharaoh Bonds (backed by real spread revenue)
 
-**Metrics:**
-- [ ] 50%+ MAAT staked
-- [ ] 20+ active validators
-- [ ] 3+ governance proposals passed
+**Metrics:** 50%+ staked · 20+ validators · 3+ proposals passed
 
 ---
 
-## Phase 7: Dominance (Month 9-12+)
+## Phase 7: Dominance (Month 12+)
 
-**Goal:** Ma'at becomes the primary cross-chain exchange.
+**Goal:** The fair-execution + cross-chain settlement layer.
 
-- [ ] Smart contract layer (CosmWasm) for advanced DeFi
-- [ ] Leverage trading on fixed prices
-- [ ] Institutional-grade KYC/AML option
-- [ ] Mobile wallet
-- [ ] Fiat on-ramp integration
-- [ ] 50+ supported assets
-- [ ] Referral program
-- [ ] Partnership with major DeFi protocols
+- [ ] CosmWasm advanced products
+- [ ] 50+ assets, mobile wallet, fiat ramps
+- [ ] Partnerships with major DeFi + wallets
 
-**Metrics:**
-- [ ] $100M+ TVL
-- [ ] $10M+ daily volume
-- [ ] $50K+/day revenue
-- [ ] Top 100 crypto project by market cap
-- [ ] Referenced as oracle by other protocols
-
----
-
-## Phase 8: What Comes After
-
-- Layer 2 for Ma'at (faster, cheaper swaps)
-- Cross-chain lending/borrowing with fixed prices
-- NFT exchange with fixed prices
-- Real-world asset tokenization at protocol-set prices
+**Metrics:** $100M+ reserve · $10M+ daily volume · $50K+/day revenue
 
 ---
 
 ## Current Focus
 
 ```
-Phase 0 > Phase 1 > Phase 2 > Phase 3 > Phase 4 > Phase 5 > Phase 6 > Phase 7
-   [##.......]  [........]  [........]  [........]  [........]  [........]  [........]
+Phase 0 > Phase 1(GATE) > Phase 2 > Phase 3 > Phase 4 > Phase 5 > Phase 6 > Phase 7
+   [##.......]
    ^ YOU ARE HERE
 ```
 
-Next concrete step: **Build the Python simulation model** to prove the economics.
+Next concrete step: **Build `simulation/maat_sim.py` and pass the stop-gate.**

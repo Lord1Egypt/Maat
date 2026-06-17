@@ -1,10 +1,10 @@
 # 𓁧 Ma'at — The Order Blockchain
 
 > **"Bring Order to the Chaos"**
-> *Central-Bank Model for Crypto — Fixed-Price Cross-Chain Asset Exchange with Scheduled Announcements*
+> *MEV-free, fixed-per-block cross-chain asset exchange — predictable execution, transparent reserves, sustainable spread.*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Concept-v0.1-blue?style=flat-square">
+  <img src="https://img.shields.io/badge/Concept-v0.2-blue?style=flat-square">
   <img src="https://img.shields.io/badge/Ecosystem-Cosmos%20SDK-2CA5E0?style=flat-square&logo=cosmos&logoColor=white">
   <img src="https://img.shields.io/badge/Layer-L1%20App--Chain-success?style=flat-square">
   <img src="https://img.shields.io/badge/Phase-Concept%20%26%20Design-yellow?style=flat-square">
@@ -15,9 +15,11 @@
 
 ## 🏛️ What is Ma'at?
 
-**Ma'at** is an L1 blockchain named after the ancient Egyptian goddess of truth, balance, order, and justice. It introduces a **novel economic model for crypto**: a **planned-price asset exchange** where wrapped assets (wBTC, wETH, USDC...) trade at **protocol-set prices** rather than market prices, with all price changes **announced in advance**.
+**Ma'at** is an L1 blockchain named after the ancient Egyptian goddess of truth, balance, order, and justice. It is a **cross-chain asset exchange that quotes a single price per block** — fixed *within* the block so there is no slippage and no MEV, but tracking the market so the protocol stays solvent and **earns the spread** on every trade.
 
-This creates a **predictable, manipulable arbitrage landscape** — and that is the *feature*, not the bug.
+Think of it as the **central bank's FX window for crypto**: you always know the price, the price is fair, nobody front-runs you — and the house keeps a tiny, honest spread instead of giving money away.
+
+> ⚠️ **v0.2 note:** This replaces the original "fixed off-market price + guaranteed user arbitrage" model, which was structurally unsustainable (it drained the reserve by design — see [REDESIGN.md](REDESIGN.md) for the full proof). Same brand, same philosophy, sound economics.
 
 ---
 
@@ -25,46 +27,42 @@ This creates a **predictable, manipulable arbitrage landscape** — and that is 
 
 ### Traditional Crypto Markets (Chaos)
 ```
-Market Price = f(Supply, Demand) ← Unpredictable, MEV-ridden, Oracle-dependent
+Per-block price moves every trade → slippage, sandwiches, MEV, oracle attacks
 ```
 
 ### Ma'at (Order)
 ```
-Protocol Price = Admin-Announced ← Predictable, MEV-resistant, No-oracle-needed
+One clearing price per block = oracle mid ± spread → no slippage, no MEV, reserve grows
 ```
 
-| Component | Market | Ma'at |
-|-----------|--------|-------|
+| Component | Market (AMM/DEX) | Ma'at |
+|-----------|------------------|-------|
 | **Native Coin (MAAT)** | Free market | Free market (traded externally) |
-| **Wrapped BTC/ETH/USDC** | Market price (AMM/DEX) | **Fixed protocol price** |
-| **Price changes** | Every block (volatile) | **Scheduled + announced in advance** |
-| **Oracle needed?** | Yes (Chainlink etc.) | **No — we ARE the oracle** |
-| **MEV?** | Sandwiches, frontrunning | **Impossible — no market spread to exploit** |
-| **Arbitrage** | Accidental, short-lived | **Intentional, persistent, guaranteed** |
+| **Wrapped BTC/ETH/USDC** | Price moves every trade | **One fixed price per block (mid ± spread)** |
+| **Price source** | AMM curve / order book | **Robust multi-source TWAP oracle** |
+| **Slippage** | Yes, grows with size | **Zero — fixed per block** |
+| **MEV** | Sandwiches, frontrunning | **Impossible — no intra-block price to exploit** |
+| **Who keeps the spread?** | LPs (with impermanent loss) | **The protocol reserve (no IL, it grows)** |
 
 ---
 
-## 💡 The Arb Engine
+## 💡 The Spread Engine (how the reserve *grows*)
 
-The gap between Ma'at's fixed price and the real market price creates **guaranteed arbitrage**:
+Ma'at quotes a two-sided price around the market mid and **keeps the spread**, exactly like a real FX bureau or market maker:
 
-### Scenario 1: wBTC priced below market
 ```
-Market BTC = $100,000 | Ma'at wBTC = $90,000
-→ User buys MAAT → Buys wBTC at $90,000 on Ma'at
-→ Bridges out real BTC → Sells on Binance at $100,000
-→ Profit = $10,000 (minus fees)
-```
+Market BTC mid = $100,000
+Ma'at BUY  wBTC @ $99,850  (mid − 0.15%)
+Ma'at SELL wBTC @ $100,150 (mid + 0.15%)
 
-### Scenario 2: wBTC priced above market
-```
-Market BTC = $100,000 | Ma'at wBTC = $110,000
-→ User brings BTC from market → Bridges to Ma'at
-→ Sells wBTC for MAAT at $110,000 → Sells MAAT on market
-→ Profit = $10,000 (minus fees)
+Every round-trip → ~0.30% to the reserve.
+Trade flow is two-sided → the reserve compounds.
 ```
 
-**Every price gap = guaranteed profit for users = guaranteed demand for MAAT.**
+This is the opposite of the old model. Instead of "guaranteed profit for users" (which was guaranteed *loss* for the reserve), Ma'at offers **guaranteed best execution** and keeps an honest spread — so it can run forever.
+
+**The real value proposition:**
+> **Guaranteed best execution. Guaranteed zero MEV. Guaranteed transparent 1:1 backing.**
 
 ---
 
@@ -72,10 +70,11 @@ Market BTC = $100,000 | Ma'at wBTC = $110,000
 
 | Phase | What Happens | Result |
 |-------|-------------|--------|
-| ✅ Bootstrap | Launch with one asset (ETH) at 2% discount | TVL floods in for arb |
-| ✅ Scale | Add BTC, USDC, USDT, SOL | Multi-asset arb hub |
-| ✅ Maturity | 50+ assets, multi-chain bridges | **You are the central bank of crypto** |
-| ✅ Dominance | Smart contracts reference YOUR prices (not Chainlink) | **You are the price oracle of the industry** |
+| ✅ Prove | Simulation shows reserve grows in ≥95% of paths | Green light to build |
+| ✅ Bootstrap | Launch wETH at mid ± spread, MEV-free | Traders come for execution quality |
+| ✅ Remit | Egypt's $30B diaspora corridor at 0.3% | Real recurring revenue |
+| ✅ Scale | BTC, USDC, SOL, IBC + a transparent reserve index | Multi-asset MEV-free hub |
+| ✅ Maturity | DAO-governed spreads, deep reserves | **The fair-execution layer of crypto** |
 
 ---
 
@@ -83,10 +82,12 @@ Market BTC = $100,000 | Ma'at wBTC = $110,000
 
 | Document | What It Covers |
 |----------|---------------|
+| [REDESIGN.md](REDESIGN.md) | **Read first** — why v0.1 was broken and how v0.2 fixes it |
+| [BUILD_PLAN.md](BUILD_PLAN.md) | How to start + the phased execution plan |
 | [VISION.md](VISION.md) | The full philosophy — why this matters |
-| [ECONOMICS.md](ECONOMICS.md) | Tokenomics, reserve model, supply mechanics |
-| [PLANNED_ECONOMY.md](PLANNED_ECONOMY.md) | How price setting works in detail |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design: Cosmos SDK modules, bridges, consensus |
+| [ECONOMICS.md](ECONOMICS.md) | Tokenomics, reserve model, spread mechanics |
+| [PLANNED_ECONOMY.md](PLANNED_ECONOMY.md) | How pricing works in detail |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design: Cosmos SDK modules, oracle, bridges |
 | [RISKS.md](RISKS.md) | Every risk with mitigations (honest) |
 | [ROADMAP.md](ROADMAP.md) | Phased execution plan |
 | [COMPETITION.md](COMPETITION.md) | Market landscape and differentiation |
@@ -96,11 +97,12 @@ Market BTC = $100,000 | Ma'at wBTC = $110,000
 
 ## ⚠️ Honest Warning
 
-**This project is NOT a typical DeFi protocol.** It is an experimental economic model on a blockchain. The concept of "fixed prices" in a traditionally free market goes against crypto orthodoxy. This is either:
-- **The biggest innovation in crypto market structure since AMMs** 🚀
-- **A spectacular failure on the scale of Terra** 💥
+**This project is NOT a typical DeFi protocol.** It is an MEV-free, oracle-priced exchange whose reserve grows on spread. The hard parts are real and we won't hide them:
+- **Bridge security** is crypto's #1 attack vector — we use battle-tested bridges with caps and insurance.
+- **Oracle robustness** is mandatory — multi-source TWAP with deviation circuit breakers.
+- **Solvency** is proven by simulation *before* any chain code is written.
 
-The difference is **transparency, proper reserves, and honest risk disclosure.** We won't hide anything.
+We document everything — including what could still go wrong.
 
 ---
 

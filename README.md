@@ -4,6 +4,7 @@
 > *MEV-free, fixed-per-block cross-chain asset exchange — predictable execution, transparent reserves, sustainable spread.*
 
 <p align="center">
+  <a href="https://github.com/Lord1Egypt/Maat/actions/workflows/ci.yml"><img src="https://github.com/Lord1Egypt/Maat/actions/workflows/ci.yml/badge.svg"></a>
   <img src="https://img.shields.io/badge/Concept-v0.2-blue?style=flat-square">
   <img src="https://img.shields.io/badge/Ecosystem-Cosmos%20SDK-2CA5E0?style=flat-square&logo=cosmos&logoColor=white">
   <img src="https://img.shields.io/badge/Layer-L1%20App--Chain-success?style=flat-square">
@@ -94,6 +95,26 @@ This is the opposite of the old model. Instead of "guaranteed profit for users" 
 | [ROADMAP.md](ROADMAP.md) | Phased execution plan |
 | [COMPETITION.md](COMPETITION.md) | Market landscape and differentiation |
 | [SIMULATION.md](SIMULATION.md) | Economic model simulation |
+
+---
+
+## ✅ Verification (this is proven, not just claimed)
+
+Every economic and safety claim is enforced by code in CI:
+
+```bash
+make test          # runs everything below
+```
+
+| What | Where | Status |
+|------|-------|--------|
+| Reserve **grows** (1000-path Monte Carlo, synthetic + real ETH) | `simulation/` | gate fails CI if not |
+| Deterministic on-chain cores: `x/maat`, `x/oracle`, `x/market`, `x/reserve`, `x/bridge`, `x/treasury`, `x/gov` | `chain/` | Go tests + fuzzing |
+| End-to-end run (backing held 100%, spread captured, bridge throttled) | `chain/scenario`, `chain/cmd/demo` | `go run ./cmd/demo` |
+| No "guaranteed risk-free profit" claims resurface | docs-integrity job | grep-enforced |
+
+The Python sim proves the **policy**; the Go core proves the **on-chain arithmetic**.
+See [WHITEPAPER.md](WHITEPAPER.md) and [chain/README.md](chain/README.md).
 
 ---
 

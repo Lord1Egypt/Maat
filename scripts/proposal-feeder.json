@@ -1,0 +1,7 @@
+{
+  "title": "Whitelist Validator Feeder",
+  "description": "Whitelist the new consensus feeder node to join the oracle pricing voting network.",
+  "feeder": "maat1valoper3",
+  "action": "whitelist",
+  "deposit": "10000000umaat"
+}

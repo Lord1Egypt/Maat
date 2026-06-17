@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma'at Blockchain — Real-Time Solvency & Reserve Dashboard</title>
+    <meta name="description" content="Monitor the real-time backing ratio, reserve balances, spread-capture revenue, and remittance corridor metrics of the Ma'at blockchain.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode">
+    <div class="background-radial"></div>
+
+    <header class="navbar">
+        <div class="logo">
+            <span class="logo-icon">⚖️</span>
+            <span class="logo-text">MA'AT</span>
+        </div>
+        <div class="network-status">
+            <span class="status-dot green"></span>
+            <span class="status-label">MAINNET-SIMULATED</span>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <section class="hero-section">
+            <h1 id="main-heading">Real-Time Solvency & Reserve Index</h1>
+            <p class="subtitle">Verifiable MEV-free liquidity and spread-capture reserve growth.</p>
+        </section>
+
+        <!-- Metric Cards Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card glass">
+                <span class="metric-label">Reserve Backing Ratio</span>
+                <div class="backing-progress-container">
+                    <div class="backing-value" id="backing-ratio-text">104.50%</div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="backing-ratio-fill" style="width: 104.5%;"></div>
+                    </div>
+                </div>
+                <span class="metric-subtext healthy" id="backing-status-text">Fully Backed & Solvent</span>
+            </div>
+
+            <div class="metric-card glass">
+                <span class="metric-label">Reserve Assets</span>
+                <div class="metric-val" id="reserve-assets-val">$3,135,000</div>
+                <span class="metric-subtext">1,045.00 ETH</span>
+            </div>
+
+            <div class="metric-card glass">
+                <span class="metric-label">Wrapped Supply</span>
+                <div class="metric-val" id="wrapped-supply-val">1,000,000 wETH</div>
+                <span class="metric-subtext">100% backable on-demand</span>
+            </div>
+
+            <div class="metric-card glass">
+                <span class="metric-label">Spread Revenue (Micro-USD)</span>
+                <div class="metric-val highlight" id="spread-revenue-val">$135,892</div>
+                <span class="metric-subtext">Accrued to reserve buffer</span>
+            </div>
+        </section>
+
+        <!-- Interactive Quote Curve & Remittance Calculator Section -->
+        <section class="interactive-section">
+            <!-- Remittance peg calculator -->
+            <div class="dashboard-card glass">
+                <h2>Egypt Remittance Peg Calculator</h2>
+                <p class="card-subtitle">Diaspora crawling-peg transfer rates (USD ↔ EGP/UMAAT)</p>
+                
+                <div class="calc-group">
+                    <label for="usd-input">Send (USD)</label>
+                    <input type="number" id="usd-input" value="1000" min="1" step="10">
+                </div>
+
+                <div class="calc-arrow">⬇️</div>
+
+                <div class="calc-group">
+                    <label for="egp-output">Receive (UMAAT equivalent)</label>
+                    <div class="read-only-box" id="egp-output">48,250.00 UMAAT</div>
+                </div>
+
+                <div class="calc-footer">
+                    <span>Spread fee: <strong id="calc-fee">0.15%</strong></span>
+                    <span>Slippage: <strong>0.00% (Fixed block quote)</strong></span>
+                </div>
+            </div>
+
+            <!-- Dynamic quote curve selector -->
+            <div class="dashboard-card glass">
+                <h2>Dynamic Quote Spread Curve</h2>
+                <p class="card-subtitle">Spread widening as a function of simulated transaction volume size</p>
+                
+                <div class="quote-inputs">
+                    <div class="calc-group flex-1">
+                        <label for="volume-slider">Trade Size (ETH)</label>
+                        <input type="range" id="volume-slider" min="1" max="100" value="10">
+                        <div class="slider-val" id="volume-slider-val">10 ETH</div>
+                    </div>
+                </div>
+
+                <div class="quote-details">
+                    <div class="quote-row">
+                        <span>Oracle Mid Price</span>
+                        <strong id="quote-mid">$3,000.00</strong>
+                    </div>
+                    <div class="quote-row">
+                        <span>Effective Spread</span>
+                        <strong id="quote-spread" class="spread-color">15.0 bps (0.15%)</strong>
+                    </div>
+                    <div class="quote-row">
+                        <span>Protocol Buys At</span>
+                        <strong id="quote-buy">$2,995.50</strong>
+                    </div>
+                    <div class="quote-row">
+                        <span>Protocol Sells At</span>
+                        <strong id="quote-sell">$3,004.50</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bridge Delay Queue & Active Feeder List -->
+        <section class="interactive-section">
+            <div class="dashboard-card glass flex-2">
+                <h2>Bridge Delayed Queue (Large Transactions)</h2>
+                <p class="card-subtitle">Transactions >= 50 ETH are subject to a 24-hour security delay.</p>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tx ID</th>
+                                <th>Withdrawer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Maturity Block</th>
+                            </tr>
+                        </thead>
+                        <tbody id="delay-queue-body">
+                            <tr>
+                                <td>#8812</td>
+                                <td>maat1q3...90pf</td>
+                                <td>75 ETH</td>
+                                <td><span class="badge pending">PENDING</span></td>
+                                <td>Block 14205 (approx 4h left)</td>
+                            </tr>
+                            <tr>
+                                <td>#8810</td>
+                                <td>maat1d4...k2l1</td>
+                                <td>120 ETH</td>
+                                <td><span class="badge cancelled">CANCELLED (Security limit)</span></td>
+                                <td>Terminated by Governance</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dashboard-card glass">
+                <h2>Oracle Feeders consensus</h2>
+                <p class="card-subtitle">Active whitelisted pricing validators</p>
+                <ul class="feeder-list" id="feeder-consensus-list">
+                    <li>
+                        <span class="feeder-name">Validator #1</span>
+                        <span class="feeder-price">$3,001.20</span>
+                    </li>
+                    <li>
+                        <span class="feeder-name">Validator #2</span>
+                        <span class="feeder-price">$2,998.50</span>
+                    </li>
+                    <li>
+                        <span class="feeder-name">Validator #3</span>
+                        <span class="feeder-price">$3,004.00</span>
+                    </li>
+                    <li>
+                        <span class="feeder-name">Validator #4</span>
+                        <span class="feeder-price">$2,999.00</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="dashboard-footer">
+        <p>© 2026 Ma'at Blockchain Project. Verifiable Solvency, Mathematical Solidity.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

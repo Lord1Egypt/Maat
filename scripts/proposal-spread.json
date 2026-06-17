@@ -1,0 +1,12 @@
+{
+  "title": "Adjust Market Base Spread",
+  "description": "Adjust the base spread from 15 bps to 12 bps to optimize execution quality during low volatility.",
+  "changes": [
+    {
+      "subspace": "market",
+      "key": "BaseBps",
+      "value": "12"
+    }
+  ],
+  "deposit": "10000000umaat"
+}

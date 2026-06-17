@@ -38,7 +38,8 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #6 | `feat:` bridge withdrawal caps/delay queue + treasury fee splits | ✅ Merged |
 | #7 | `feat:` end-to-end integration scenario + demo + `make test` runner | ✅ Merged |
 | #8 | `docs:` WHITEPAPER.md (synthesis + Phase 1 deliverable) | ✅ Merged |
-| #9 | `test:` Go fuzz tests for safety invariants | ⏳ This PR |
+| #9 | `test:` Go fuzz tests for safety invariants | ✅ Merged |
+| #10 | `feat:` MAAT token core (x/maat) — vesting + inflation | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
@@ -84,6 +85,9 @@ both models:
     + backing checks; 1:1 bridge in/out). Decoupled from the SDK so it's fully testable.
   - ✅ Protection cores (Go, tested): `bridge/limits.go` (per-asset withdrawal cap + delay
     queue with cancel — Risk #1) and `treasury/fees.go` (ECONOMICS fee splits, leak-free).
+  - ✅ Token core (Go, tested): `token/token.go` (`x/maat`) — ECONOMICS vesting schedule
+    (TGE/cliff/linear, sums to 1B, monotonic, fully vested by month 60) + bounded inflation
+    (≤10%) block-reward math.
   - ✅ Integration: `chain/scenario` wires oracle+market+treasury+bridge through a 720-block
     deterministic run (test asserts backing ≥100%, spread captured, fund split, cap throttles);
     `chain/cmd/demo` is the runnable proof; `make test` runs Go + the economic gate in one shot.

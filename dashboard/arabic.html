@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة معت — التحويلات المالية الفورية لمصر</title>
+    <meta name="description" content="قم بتحويل الأموال إلى مصر بأسعار صرف مستقرة وزمن تنفيذ فوري وبدون MEV أو انزلاق سعري.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            text-align: right;
+        }
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 2px;
+        }
+        .calc-group label {
+            text-align: right;
+            font-weight: 700;
+        }
+        .calc-footer {
+            flex-direction: row-reverse;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="background-radial"></div>
+
+    <header class="navbar">
+        <div class="logo">
+            <span class="logo-icon">⚖️</span>
+            <span class="logo-text">MA'AT</span>
+        </div>
+        <div class="network-status">
+            <span class="status-dot green"></span>
+            <span class="status-label">شبكة تجريبية نشطة</span>
+        </div>
+    </header>
+
+    <main class="dashboard-container" style="max-width: 600px; margin: 2rem auto;">
+        <section class="hero-section">
+            <h1>بوابة تحويل الأموال الفورية لمصر</h1>
+            <p class="subtitle">تنفيذ فوري وعادل لحماية مدخراتك من التضخم والانزلاق السعري.</p>
+        </section>
+
+        <!-- Main calculator card -->
+        <div class="dashboard-card glass">
+            <h2>حاسبة أسعار الصرف الزاحفة</h2>
+            <p class="card-subtitle">أسعار الصرف الرسمية المربوطة والمؤمنة بالاحتياطي بالكامل.</p>
+            
+            <div class="calc-group">
+                <label for="usd-input-ar">المبلغ المرسل (دولار أمريكي)</label>
+                <input type="number" id="usd-input-ar" value="1000" min="1" step="10">
+            </div>
+
+            <div class="calc-arrow">⬇️</div>
+
+            <div class="calc-group">
+                <label for="egp-output-ar">المبلغ المستلم بالجنيه الرقمي (UMAAT)</label>
+                <div class="read-only-box" id="egp-output-ar">48,177.62 UMAAT</div>
+            </div>
+
+            <div class="calc-footer">
+                <span>عمولة الفارق السعري: <strong>0.15%</strong></span>
+                <span>الانزلاق السعري: <strong>0.00% (ثابت لكل كتلة)</strong></span>
+            </div>
+        </div>
+
+        <div class="dashboard-card glass" style="margin-top: 1.5rem;">
+            <h2>ضمانات احتياطي الأمان</h2>
+            <p class="card-subtitle">الشفافية الكاملة لأصول الاحتياطي الداعم للتحويلات.</p>
+            <div class="quote-details">
+                <div class="quote-row">
+                    <span>نسبة تغطية الاحتياطي</span>
+                    <strong style="color: var(--green-healthy);">104.50% (تغطية كاملة)</strong>
+                </div>
+                <div class="quote-row">
+                    <span>آلية الربط</span>
+                    <strong>صرف فوري 1:1 مدعوم بالكامل</strong>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="dashboard-footer">
+        <p>© 2026 مشروع معت لتقنية البلوكشين. احتياطي شفاف، كفاءة مطلقة.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const usdIn = document.getElementById('usd-input-ar');
+            const egpOut = document.getElementById('egp-output-ar');
+            const rate = 48.25;
+
+            function recalculate() {
+                const usd = parseFloat(usdIn.value) || 0;
+                const total = usd * rate * (1.0 - 0.0015);
+                egpOut.textContent = total.toLocaleString('ar-EG', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + " UMAAT";
+            }
+
+            usdIn.addEventListener('input', recalculate);
+            recalculate();
+        });
+    </script>
+</body>
+</html>

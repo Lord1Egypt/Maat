@@ -36,7 +36,9 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #4 | `feat:` calibration vs real ETH data + real-data CI gate | ✅ Merged |
 | #5 | `feat:` deterministic Go pricing core (x/oracle + x/market) + Go CI | ✅ Merged |
 | #6 | `feat:` bridge withdrawal caps/delay queue + treasury fee splits | ✅ Merged |
-| #7 | `feat:` end-to-end integration scenario + demo + `make test` runner | ⏳ This PR |
+| #7 | `feat:` end-to-end integration scenario + demo + `make test` runner | ✅ Merged |
+| #8 | `docs:` WHITEPAPER.md (synthesis + Phase 1 deliverable) | ✅ Merged |
+| #9 | `test:` Go fuzz tests for safety invariants | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.

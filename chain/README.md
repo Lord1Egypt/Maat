@@ -58,4 +58,5 @@ arithmetic. See [../REDESIGN.md](../REDESIGN.md) and [../ARCHITECTURE.md](../ARC
 
 Full SDK plumbing: `MsgServer`/proto types, genesis, params, EndBlock wiring,
 keeper state stores, and the `x/bridge` Wormhole integration. Those are
-mechanical wrappers around this verified core.
+mechanical wrappers around this verified core — see **[MODULE_SPEC.md](MODULE_SPEC.md)**
+for the exact per-module wiring guide.

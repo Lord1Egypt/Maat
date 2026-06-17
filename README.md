@@ -109,5 +109,5 @@ We document everything — including what could still go wrong.
 
 <p align="center">
   Made with 𓁧 by <b>Mohamed Mounir (Lord1Egypt)</b><br>
-  <i>"السوق مش دايماً صح — في أحياناً النظام أحسن"</i>
+  <i>"السوق مش دايماً صح — أحياناً النظام أحسن"</i>
 </p>

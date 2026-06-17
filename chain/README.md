@@ -1,0 +1,52 @@
+# chain/ — Ma'at on-chain core
+
+The deterministic heart of Ma'at's pricing, written in plain Go with **integer
+fixed-point math only** (no floats — safe for CometBFT consensus, where every
+validator must compute byte-identical results).
+
+This package is intentionally **decoupled from the Cosmos SDK** so the
+risk-bearing logic can be exhaustively unit-tested on its own (`go test ./...`,
+zero external dependencies). The Cosmos modules wrap it; they don't reimplement
+it.
+
+## What's here
+
+| File | Maps to module | Responsibility |
+|------|----------------|----------------|
+| `pricing/oracle.go` | `x/oracle` | Median of de-outliered sources → integer-EMA TWAP `Mid`, with a deviation guard and a circuit breaker that halts on implausible jumps. |
+| `pricing/market.go` | `x/market` + `x/reserve` | `MakeQuote` (mid ± vol/skew-adjusted spread, fixed per block), `BuyWrapped`/`SellWrapped` (spread accrual + backing checks), `BridgeIn`/`BridgeOut` (1:1 custody). |
+
+Units: prices in **micro-USD** (1 USD = 1_000_000), spreads/ratios in **bps**.
+
+## Run the tests
+
+```bash
+cd chain
+go vet ./...
+go test ./... -v
+```
+
+## How the Cosmos keepers will use it (integration sketch)
+
+```go
+// x/oracle keeper — called in EndBlock after collecting feeder votes
+mid, err := oracle.Update(sourcePricesFromVotes)   // pure, deterministic
+k.SetMid(ctx, denom, mid)                          // SDK state write
+
+// x/market keeper — MsgSwap handler
+mid := k.oracle.GetMid(ctx, denom)
+q := pricing.MakeQuote(mid, sp.EffectiveSpreadBps(volSignal), invSkewBps)
+if err := reserve.BuyWrapped(amt, q); err != nil { return err }
+k.SaveReserve(ctx, denom, reserve)                 // spread accrued, backing checked
+```
+
+The float Python model in `../simulation/` and this integer Go core encode the
+**same economics** (oracle mid ± spread, protocol earns the spread, backing
+never breaks) — the simulation proves the policy; this proves the on-chain
+arithmetic. See [../REDESIGN.md](../REDESIGN.md) and [../ARCHITECTURE.md](../ARCHITECTURE.md).
+
+## Not yet here (next)
+
+Full SDK plumbing: `MsgServer`/proto types, genesis, params, EndBlock wiring,
+keeper state stores, and the `x/bridge` Wormhole integration. Those are
+mechanical wrappers around this verified core.

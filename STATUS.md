@@ -32,6 +32,9 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 |----|------|--------|
 | #1 | `fix:` replace unsustainable fixed-price model with spread-capture (v0.2). Rewrote all 10 docs + added REDESIGN.md & BUILD_PLAN.md | ✅ Merged |
 | #2 | `feat:` economic stop-gate simulation + first CI/CD pipeline | ✅ Merged |
+| #3 | `docs:` STATUS.md continuation/handoff doc | ✅ Merged |
+| #4 | `feat:` calibration vs real ETH data + real-data CI gate | ✅ Merged |
+| #5 | `feat:` deterministic Go pricing core (x/oracle + x/market) + Go CI | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
@@ -70,10 +73,15 @@ both models:
 
 - **B — Calibrate vs real ETH data** ✅ DONE (PR #4). Params locked: annual_vol 0.4554,
   jump 0.0291, crash 0.38; gate passes on real-data bootstrap.
-- **A — Scaffold the chain (Phase 2)** ← IN PROGRESS / NEXT. Start with the core pricing
-  math: `x/oracle` (hardened multi-source TWAP) and `x/market` (fixed-per-block quote +
-  settlement + spread accrual), since every other module depends on them. Then `x/pegged`,
-  `x/reserve`, `x/bridge`. Go 1.22 is available in the environment.
+- **A — Scaffold the chain (Phase 2)** ← IN PROGRESS.
+  - ✅ Deterministic pricing **core** in `chain/pricing/` (Go, integer fixed-point, 12
+    unit tests passing, Go CI job added): `oracle.go` (median + deviation guard + EMA TWAP
+    + breaker) and `market.go` (quote = mid ± vol/skew spread; buy/sell with spread accrual
+    + backing checks; 1:1 bridge in/out). Decoupled from the SDK so it's fully testable.
+  - ⏭️ NEXT: wrap the core in actual Cosmos SDK modules — proto/Msg types, keepers, genesis,
+    params, EndBlock oracle wiring — then `x/bridge` (Wormhole). These are mechanical
+    wrappers around the verified core. A full SDK chain can't be compiled/verified in this
+    sandbox, so build/verify it in a Go+ignite environment.
 
 (See [BUILD_PLAN.md](BUILD_PLAN.md) for the full phased plan and stop-gate rules.)
 

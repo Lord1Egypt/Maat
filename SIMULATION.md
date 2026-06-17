@@ -45,9 +45,14 @@ The simulation models:
 
 ```bash
 cd simulation
-pip install numpy pandas matplotlib
-python maat_sim.py --days 90 --base-spread 0.0015 --paths 1000 --output charts/
+# zero dependencies — pure Python standard library
+python3 maat_sim.py --days 90 --base-spread 0.0015 --paths 1000
+python3 maat_sim.py --charts            # optional PNGs (only if matplotlib installed)
 ```
+
+Exit code `0` = gate passed, `1` = gate failed. **CI runs this gate on every push**
+(`.github/workflows/ci.yml`), so the economics are enforced, not just documented.
+See [simulation/README.md](simulation/README.md) for the full model and knobs.
 
 ---
 

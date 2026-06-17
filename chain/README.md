@@ -13,6 +13,7 @@ it.
 
 | File | Maps to module | Responsibility |
 |------|----------------|----------------|
+| `token/token.go` | `x/maat` | MAAT vesting schedule (ECONOMICS distribution) + bounded inflation / block-reward math. |
 | `pricing/oracle.go` | `x/oracle` | Median of de-outliered sources → integer-EMA TWAP `Mid`, with a deviation guard and a circuit breaker that halts on implausible jumps. |
 | `pricing/market.go` | `x/market` + `x/reserve` | `MakeQuote` (mid ± vol/skew-adjusted spread, fixed per block), `BuyWrapped`/`SellWrapped` (spread accrual + backing checks), `BridgeIn`/`BridgeOut` (1:1 custody). |
 | `bridge/limits.go` | `x/bridge` | Bridge-out safety (Risk #1): rolling per-asset withdrawal cap + delay queue (large withdrawals held `DelayBlocks`, cancellable by governance). |

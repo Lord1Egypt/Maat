@@ -42,6 +42,21 @@ jobs:
           --price-csv data/eth_hourly.csv
           --annual-vol 0.4554 --jump-size 0.0291 --crash-size 0.38
 
+  chain-core:
+    name: Chain core (Go pricing tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Vet + test the deterministic pricing core
+        working-directory: chain
+        run: |
+          go vet ./...
+          go test ./... -count=1
+
   docs-integrity:
     name: Docs integrity (no resurrected broken claims)
     runs-on: ubuntu-latest

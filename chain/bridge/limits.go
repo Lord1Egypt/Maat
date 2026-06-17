@@ -142,3 +142,35 @@ func (l *Limiter) Get(id int64) (*Withdrawal, bool) {
 	w, ok := l.pending[uint64(id)]
 	return w, ok
 }
+
+func (l *Limiter) GetWindowStart() int64 {
+	return l.windowStart
+}
+
+func (l *Limiter) SetWindowStart(val int64) {
+	l.windowStart = val
+}
+
+func (l *Limiter) GetUsedInWindow() int64 {
+	return l.usedInWindow
+}
+
+func (l *Limiter) SetUsedInWindow(val int64) {
+	l.usedInWindow = val
+}
+
+func (l *Limiter) GetNextID() uint64 {
+	return l.nextID
+}
+
+func (l *Limiter) SetNextID(val uint64) {
+	l.nextID = val
+}
+
+func (l *Limiter) GetPending() map[uint64]*Withdrawal {
+	return l.pending
+}
+
+func (l *Limiter) SetPending(val map[uint64]*Withdrawal) {
+	l.pending = val
+}

@@ -1,0 +1,27 @@
+syntax = "proto3";
+package maat.market.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/market/types";
+
+message QueryGetQuoteRequest {
+  string denom = 1;
+}
+
+message QueryGetQuoteResponse {
+  int64 mid  = 1;
+  int64 buy  = 2;
+  int64 sell = 3;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+message Params {
+  int64 base_bps     = 1;
+  int64 vol_mult_bps = 2;
+  int64 skew_max_bps = 3;
+  int64 max_bps      = 4;
+}

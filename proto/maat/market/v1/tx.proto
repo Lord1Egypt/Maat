@@ -1,0 +1,16 @@
+syntax = "proto3";
+package maat.market.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/market/types";
+
+message MsgSwap {
+  string trader    = 1;
+  string from_denom = 2;
+  string to_denom  = 3;
+  int64  amount    = 4;
+}
+
+message MsgSwapResponse {
+  int64 received = 1;
+  int64 spread   = 2;
+}

@@ -1,0 +1,27 @@
+syntax = "proto3";
+package maat.oracle.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/oracle/types";
+
+message QueryGetMidRequest {
+  string denom = 1;
+}
+
+message QueryGetMidResponse {
+  int64 mid    = 1;
+  bool  halted = 2;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+message Params {
+  int64 alpha_num   = 1;
+  int64 alpha_den   = 2;
+  int64 max_dev_bps = 3;
+  int64 break_bps   = 4;
+  int64 vote_period = 5;
+}

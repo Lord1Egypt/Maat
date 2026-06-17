@@ -1,0 +1,19 @@
+syntax = "proto3";
+package maat.oracle.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/oracle/types";
+
+message MsgSubmitPrice {
+  string feeder = 1;
+  string denom  = 2;
+  int64  price  = 3;
+}
+
+message MsgSubmitPriceResponse {}
+
+message MsgResumeOracle {
+  string authority = 1;
+  string denom     = 2;
+}
+
+message MsgResumeOracleResponse {}

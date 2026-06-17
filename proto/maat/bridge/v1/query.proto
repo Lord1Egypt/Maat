@@ -1,0 +1,41 @@
+syntax = "proto3";
+package maat.bridge.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/bridge/types";
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+message QueryRemainingCapRequest {
+  string denom = 1;
+}
+
+message QueryRemainingCapResponse {
+  int64 remaining = 1;
+}
+
+message QueryPendingRequest {
+  string denom = 1;
+}
+
+message QueryPendingResponse {
+  repeated PendingWithdrawal withdrawals = 1;
+}
+
+message PendingWithdrawal {
+  uint64 id         = 1;
+  int64  amount     = 2;
+  int64  requested_at = 3;
+  int64  unlock_at  = 4;
+  string status     = 5;
+}
+
+message Params {
+  int64 daily_cap_units = 1;
+  int64 window_blocks   = 2;
+  int64 large_tx_units  = 3;
+  int64 delay_blocks    = 4;
+}

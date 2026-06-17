@@ -1,0 +1,19 @@
+syntax = "proto3";
+package maat.treasury.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/treasury/types";
+
+import "maat/treasury/v1/query.proto";
+
+message GenesisState {
+  SplitParams spread_split     = 1;
+  SplitParams bridge_out_split = 2;
+  TreasuryBalances balances    = 3;
+}
+
+message TreasuryBalances {
+  int64 reserve   = 1;
+  int64 rewards   = 2;
+  int64 insurance = 3;
+  int64 treasury  = 4;
+}

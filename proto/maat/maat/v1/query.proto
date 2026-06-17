@@ -1,0 +1,24 @@
+syntax = "proto3";
+package maat.maat.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/maat/types";
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+message QueryCirculatingRequest {
+  int32 month = 1;
+}
+
+message QueryCirculatingResponse {
+  int64 circulating = 1;
+  int64 total       = 2;
+}
+
+message Params {
+  int64 annual_inflation_bps = 1;
+  int64 blocks_per_year      = 2;
+}

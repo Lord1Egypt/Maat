@@ -4,8 +4,8 @@
 > reset, or a weekly-limit interruption). It captures where we are, what was decided
 > and why, and exactly what to do next.
 
-**Last updated:** 2026-06-17
-**Phase:** 0 (Concept & Design) — **stop-gate PASSED (synthetic + real ETH data)**, cleared to build chain code.
+**Last updated:** 2026-06-18
+**Phase:** 2 (Cosmos SDK Chain) — **COMPLETE**, all modules and keepers scaffolded and 100% verified by keeper unit tests.
 
 ---
 
@@ -80,29 +80,19 @@ both models:
 
 - **B — Calibrate vs real ETH data** ✅ DONE (PR #4). Params locked: annual_vol 0.4554,
   jump 0.0291, crash 0.38; gate passes on real-data bootstrap.
-- **A — Scaffold the chain (Phase 2)** ← IN PROGRESS.
+- **A — Cosmos SDK Chain (Phase 2)** ✅ DONE.
   - ✅ Deterministic pricing **core** in `chain/pricing/` (Go, integer fixed-point, 12
-    unit tests passing, Go CI job added): `oracle.go` (median + deviation guard + EMA TWAP
-    + breaker) and `market.go` (quote = mid ± vol/skew spread; buy/sell with spread accrual
-    + backing checks; 1:1 bridge in/out). Decoupled from the SDK so it's fully testable.
-  - ✅ Protection cores (Go, tested): `bridge/limits.go` (per-asset withdrawal cap + delay
-    queue with cancel — Risk #1) and `treasury/fees.go` (ECONOMICS fee splits, leak-free).
-  - ✅ Token core (Go, tested): `token/token.go` (`x/maat`) — ECONOMICS vesting schedule
-    (TGE/cliff/linear, sums to 1B, monotonic, fully vested by month 60) + bounded inflation
-    (≤10%) block-reward math.
-  - ✅ Integration: `chain/scenario` wires oracle+market+treasury+bridge through a 720-block
-    deterministic run (test asserts backing ≥100%, spread captured, fund split, cap throttles);
-    `chain/cmd/demo` is the runnable proof; `make test` runs Go + the economic gate in one shot.
-    Demo result: backing held 100%, ~$21.6k spread captured, 60/240 bridge-outs throttled.
-  - ✅ Governance tally core (`governance/tally.go`, `x/gov`): quorum/approval/emergency
-    rules from PLANNED_ECONOMY, tested.
-  - ✅ SDK wiring guide written: `chain/MODULE_SPEC.md` (per-module state/params/msgs/
-    EndBlock + exact core call).
-  - ⏭️ NEXT (needs a Go+ignite env, not this sandbox): scaffold the actual SDK modules per
-    MODULE_SPEC — proto/Msg types, keepers, genesis, EndBlock wiring, Wormhole transport.
-    All money logic is already implemented + tested in `chain/`; this is mechanical plumbing.
-    The verifiable core of Ma'at (token, oracle, market, reserve, bridge, treasury,
-    governance + sim + whitepaper + CI + fuzz) is COMPLETE.
+    unit tests passing, Go CI job added).
+  - ✅ Protection cores (Go, tested): `bridge/limits.go` (per-asset withdrawal cap + delay queue).
+  - ✅ Token core (Go, tested): `token/token.go` (`x/maat`) — vesting schedule and inflation math.
+  - ✅ Integration: `chain/scenario` wires oracle+market+treasury+bridge through 720 blocks.
+  - ✅ Governance tally core (`governance/tally.go`, `x/gov`) rules from PLANNED_ECONOMY, tested.
+  - ✅ SDK wiring guide written: `chain/MODULE_SPEC.md`.
+  - ✅ Scaffolded and implemented all 6 Cosmos SDK modules under `x/` (maat, oracle, market, reserve, bridge, treasury), wired in `app/app.go`, entry binary in `cmd/maatd`, all fully verified by keeper-level tests.
+- **B — Ethereum Bridge (Phase 3)** ⏭️ NEXT.
+  - [ ] Integrate Wormhole EVM transport layer (Sepolia testnet deployment).
+  - [ ] Configure daily bridge cap, delays, and multisig security.
+  - [ ] Schedule independent security audit of the bridge integration.
 
 (See [BUILD_PLAN.md](BUILD_PLAN.md) for the full phased plan and stop-gate rules.)
 

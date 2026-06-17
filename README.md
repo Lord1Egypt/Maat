@@ -111,7 +111,7 @@ make test          # runs everything below
 | Reserve **grows** (1000-path Monte Carlo, synthetic + real ETH) | `simulation/` | gate fails CI if not |
 | Deterministic on-chain cores: `x/maat`, `x/oracle`, `x/market`, `x/reserve`, `x/bridge`, `x/treasury`, `x/gov` | `chain/` | Go tests + fuzzing |
 | End-to-end run (backing held 100%, spread captured, bridge throttled) | `chain/scenario`, `chain/cmd/demo` | `go run ./cmd/demo` |
-| No "guaranteed risk-free profit" claims resurface | docs-integrity job | grep-enforced |
+| No "guaranteed risk-free profit" claims reappear | docs-integrity job | grep-enforced |
 
 The Python sim proves the **policy**; the Go core proves the **on-chain arithmetic**.
 See [WHITEPAPER.md](WHITEPAPER.md) and [chain/README.md](chain/README.md).

@@ -1,0 +1,10 @@
+syntax = "proto3";
+package maat.bridge.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/bridge/types";
+
+import "maat/bridge/v1/query.proto";
+
+message GenesisState {
+  Params params = 1;
+}

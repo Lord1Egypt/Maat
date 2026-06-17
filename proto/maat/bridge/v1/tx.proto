@@ -1,0 +1,40 @@
+syntax = "proto3";
+package maat.bridge.v1;
+
+option go_package = "github.com/Lord1Egypt/Maat/x/bridge/types";
+
+message MsgBridgeIn {
+  string depositor = 1;
+  string denom     = 2;
+  int64  amount    = 3;
+  bytes  proof     = 4;
+}
+
+message MsgBridgeInResponse {}
+
+message MsgBridgeOut {
+  string withdrawer = 1;
+  string denom      = 2;
+  int64  amount     = 3;
+  string to_address = 4;
+}
+
+message MsgBridgeOutResponse {
+  uint64 withdrawal_id = 1;
+  bool   immediate     = 2;
+  int64  unlock_at     = 3;
+}
+
+message MsgExecuteWithdrawal {
+  string executor     = 1;
+  uint64 withdrawal_id = 2;
+}
+
+message MsgExecuteWithdrawalResponse {}
+
+message MsgCancelWithdrawal {
+  string authority     = 1;
+  uint64 withdrawal_id = 2;
+}
+
+message MsgCancelWithdrawalResponse {}

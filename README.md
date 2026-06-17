@@ -82,6 +82,7 @@ This is the opposite of the old model. Instead of "guaranteed profit for users" 
 
 | Document | What It Covers |
 |----------|---------------|
+| [WHITEPAPER.md](WHITEPAPER.md) | The synthesis — model, proof, validation, on-chain core |
 | [REDESIGN.md](REDESIGN.md) | **Read first** — why v0.1 was broken and how v0.2 fixes it |
 | [STATUS.md](STATUS.md) | Current project state & continuation handoff |
 | [BUILD_PLAN.md](BUILD_PLAN.md) | How to start + the phased execution plan |

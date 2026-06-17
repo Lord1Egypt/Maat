@@ -46,15 +46,40 @@ def hourly_sigma(annual_vol: float) -> float:
     return annual_vol / math.sqrt(HOURS_PER_YEAR)
 
 
-def simulate_path(p, rng, mode="v2", flash=False):
+def load_returns(path):
+    """Load a price CSV (timestamp_ms,price_usd) -> list of hourly log returns."""
+    import csv
+    prices = []
+    with open(path) as f:
+        for row in csv.DictReader(f):
+            prices.append(float(row["price_usd"]))
+    return [math.log(prices[i] / prices[i - 1])
+            for i in range(1, len(prices)) if prices[i] > 0 and prices[i - 1] > 0]
+
+
+def _block_bootstrap(pool, n, block, rng):
+    """Resample a real return series in contiguous blocks (preserves fat tails
+    and short-horizon autocorrelation) to make many realistic paths."""
+    out = []
+    L = len(pool)
+    while len(out) < n:
+        start = rng.randrange(L)
+        out.extend(pool[(start + k) % L] for k in range(block))
+    return out[:n]
+
+
+def simulate_path(p, rng, mode="v2", flash=False, returns_pool=None, block=24):
     """Simulate one price path. Returns a dict of outcomes.
 
     mode: "v2" = oracle mid +/- spread (spread-capture)
           "v1" = fixed off-market price (constant discount) -- the broken model
     flash: if True, inject a flash-crash jump to stress backing.
+    returns_pool: if given, drive the true mid by block-bootstrapping these
+                  REAL hourly log returns instead of synthetic GBM+jumps.
     """
     steps = p.days * 24
     sig = hourly_sigma(p.annual_vol)
+    boot = _block_bootstrap(returns_pool, steps, block, rng) if returns_pool else None
 
     true_mid = 1.0
     oracle = 1.0
@@ -69,16 +94,21 @@ def simulate_path(p, rng, mode="v2", flash=False):
     crash_at = rng.randint(steps // 3, 2 * steps // 3) if flash else -1
 
     for t in range(steps):
-        # --- market mid evolves (GBM) ---
-        shock = rng.gauss(0.0, sig)
-        true_mid *= math.exp(shock - 0.5 * sig * sig)
+        # --- market mid evolves ---
+        if boot is not None:
+            # real-data replay: jumps are already embedded in the returns
+            shock = boot[t]
+            true_mid *= math.exp(shock)
+        else:
+            # synthetic GBM
+            shock = rng.gauss(0.0, sig)
+            true_mid *= math.exp(shock - 0.5 * sig * sig)
+            if rng.random() < p.jump_prob:
+                true_mid *= math.exp(rng.gauss(0.0, p.jump_size))
 
-        # --- occasional jump / flash crash ---
+        # --- flash-crash injection (stress test, both modes) ---
         if t == crash_at:
             true_mid *= (1.0 - p.crash_size)        # e.g. -35% gap
-        elif rng.random() < p.jump_prob:
-            jump = rng.gauss(0.0, p.jump_size)
-            true_mid *= math.exp(jump)
 
         # --- oracle freshness: EMA of the true mid (alpha high = fresh) ---
         oracle += p.oracle_alpha * (true_mid - oracle)
@@ -137,9 +167,10 @@ def simulate_path(p, rng, mode="v2", flash=False):
     }
 
 
-def monte_carlo(p, n, mode="v2", flash=False, seed=0):
+def monte_carlo(p, n, mode="v2", flash=False, seed=0, returns_pool=None, block=24):
     rng = random.Random(seed)
-    results = [simulate_path(p, rng, mode=mode, flash=flash) for _ in range(n)]
+    results = [simulate_path(p, rng, mode=mode, flash=flash,
+                             returns_pool=returns_pool, block=block) for _ in range(n)]
     pnls = [r["pnl"] for r in results]
     grew = sum(1 for r in results if r["pnl"] >= 0)
     backing_ok = sum(1 for r in results if r["backing_ok"])
@@ -186,18 +217,28 @@ def main(argv=None):
     ap.add_argument("--pass-threshold", type=float, default=0.95)
     ap.add_argument("--charts", action="store_true", help="write PNG charts (needs matplotlib)")
     ap.add_argument("--output", default="charts/")
+    ap.add_argument("--price-csv", default=None,
+                    help="drive the mid from REAL returns in this CSV (block-bootstrapped)")
+    ap.add_argument("--block", type=int, default=24, help="bootstrap block size (hours)")
     p = ap.parse_args(argv)
+
+    pool = None
+    src = "synthetic GBM+jumps"
+    if p.price_csv:
+        pool = load_returns(p.price_csv)
+        src = f"REAL data ({p.price_csv}, {len(pool)} returns, block={p.block}h)"
 
     print("=" * 64)
     print(" Ma'at Economic Stop-Gate  —  v0.2 spread-capture vs v0.1 fixed")
     print("=" * 64)
     print(f" paths={p.paths}  days={p.days}  spread={p.base_spread*1e4:.0f}bps  "
           f"oracle_alpha={p.oracle_alpha}  seed={p.seed}")
+    print(f" price source: {src}")
     print("-" * 64)
 
-    v2 = monte_carlo(p, p.paths, mode="v2", flash=False, seed=p.seed)
-    v1 = monte_carlo(p, p.paths, mode="v1", flash=False, seed=p.seed)
-    stress = monte_carlo(p, p.paths, mode="v2", flash=True, seed=p.seed + 1)
+    v2 = monte_carlo(p, p.paths, mode="v2", flash=False, seed=p.seed, returns_pool=pool, block=p.block)
+    v1 = monte_carlo(p, p.paths, mode="v1", flash=False, seed=p.seed, returns_pool=pool, block=p.block)
+    stress = monte_carlo(p, p.paths, mode="v2", flash=True, seed=p.seed + 1, returns_pool=pool, block=p.block)
 
     print(" MODEL                     reserve grows   median PnL   5th-pct PnL")
     print(f" v0.2 spread-capture       {pct(v2['grew_frac'])}        "

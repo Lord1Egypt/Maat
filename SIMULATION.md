@@ -46,9 +46,22 @@ The simulation models:
 ```bash
 cd simulation
 # zero dependencies — pure Python standard library
+
+# 1) (optional) refresh real ETH data, then calibrate params from it
+python3 fetch_data.py                    # -> data/eth_hourly.csv (CoinGecko)
+python3 calibrate.py                     # estimate vol/jumps from real data
+
+# 2) run the stop-gate — synthetic, or driven by REAL data (block-bootstrap)
 python3 maat_sim.py --days 90 --base-spread 0.0015 --paths 1000
+python3 maat_sim.py --paths 1000 --price-csv data/eth_hourly.csv \
+        --annual-vol 0.4554 --jump-size 0.0291 --crash-size 0.38
 python3 maat_sim.py --charts            # optional PNGs (only if matplotlib installed)
 ```
+
+### Calibrated against real ETH (90d hourly)
+annual vol (ex-jump) **45.5%** · jumps **~1%/hr @ 2.9%** · max drawdown **−37.9%**.
+Both the synthetic and real-data gates **PASS**: v0.2 reserve grows in **100%** of paths
+(~**+4.5%**), v0.1 fixed-price drains **−86%**.
 
 Exit code `0` = gate passed, `1` = gate failed. **CI runs this gate on every push**
 (`.github/workflows/ci.yml`), so the economics are enforced, not just documented.

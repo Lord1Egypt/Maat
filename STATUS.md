@@ -5,7 +5,7 @@
 > and why, and exactly what to do next.
 
 **Last updated:** 2026-06-17
-**Phase:** 0 (Concept & Design) — **stop-gate PASSED**, cleared to build chain code.
+**Phase:** 0 (Concept & Design) — **stop-gate PASSED (synthetic + real ETH data)**, cleared to build chain code.
 
 ---
 
@@ -50,6 +50,9 @@ both models:
 
 - Backing stayed ≥100% in 100% of paths; flash-crash absorbed by the buffer.
 - The gate has **teeth**: a laggy oracle + near-zero spread correctly **fails** it (exit 1).
+- **Now also validated on REAL ETH data** (90d hourly, CoinGecko): calibrated to 45.5%
+  annual vol / ~1%-per-hour jumps / −37.9% max drawdown; block-bootstrap gate still PASSES
+  (+4.45% median, v0.1 −86%). Tools: `fetch_data.py`, `calibrate.py`; replay via `--price-csv`.
 - Run it: `python3 simulation/maat_sim.py --paths 1000` (exit 0 = pass, 1 = fail).
 
 ---
@@ -63,17 +66,15 @@ both models:
 
 ---
 
-## 5. NEXT STEPS (the open decision)
+## 5. NEXT STEPS
 
-Phase 0 is cleared. Two candidate next moves (was awaiting user's pick):
+- **B — Calibrate vs real ETH data** ✅ DONE (PR #4). Params locked: annual_vol 0.4554,
+  jump 0.0291, crash 0.38; gate passes on real-data bootstrap.
+- **A — Scaffold the chain (Phase 2)** ← IN PROGRESS / NEXT. Start with the core pricing
+  math: `x/oracle` (hardened multi-source TWAP) and `x/market` (fixed-per-block quote +
+  settlement + spread accrual), since every other module depends on them. Then `x/pegged`,
+  `x/reserve`, `x/bridge`. Go 1.22 is available in the environment.
 
-- **A — Scaffold the Cosmos SDK chain (Phase 2).** Start with `x/oracle` (hardened
-  multi-source TWAP) and `x/market` (fixed-per-block quote + settlement + spread accrual),
-  since every other module depends on them. Then `x/pegged`, `x/reserve`, `x/bridge`.
-- **B — Calibrate the simulation against real historical ETH price data** before coding,
-  to lock in production-realistic spread/oracle-lag/cap parameters.
-
-Recommendation: **B then A** — cheap to calibrate first, then build on validated params.
 (See [BUILD_PLAN.md](BUILD_PLAN.md) for the full phased plan and stop-gate rules.)
 
 ---

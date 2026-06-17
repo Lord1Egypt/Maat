@@ -29,10 +29,18 @@ jobs:
       - name: Compile-check (no syntax errors)
         run: python -m py_compile simulation/maat_sim.py
 
-      - name: Run the economic stop-gate (1000 Monte Carlo paths)
+      - name: Run the economic stop-gate — synthetic (1000 Monte Carlo paths)
         # Exits non-zero if the reserve fails to grow in >=95% of paths,
         # if backing ever breaks 100%, or if the flash-crash buffer fails.
         run: python simulation/maat_sim.py --paths 1000 --seed 42
+
+      - name: Run the economic stop-gate — REAL ETH data (block-bootstrap)
+        # Same gate, but the mid is driven by real committed ETH returns.
+        working-directory: simulation
+        run: >
+          python maat_sim.py --paths 1000 --seed 42
+          --price-csv data/eth_hourly.csv
+          --annual-vol 0.4554 --jump-size 0.0291 --crash-size 0.38
 
   docs-integrity:
     name: Docs integrity (no resurrected broken claims)

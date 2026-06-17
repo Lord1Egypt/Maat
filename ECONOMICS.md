@@ -1,8 +1,12 @@
 # ECONOMICS.md
 
-> The Ma'at Economic Model
+> The Ma'at Economic Model (v0.2 — spread-capture)
 
 Tokenomics, Reserve Model, Supply Mechanics, and Revenue
+
+> ⚠️ Corrected from v0.1. The old "fixed off-market price + guaranteed user arbitrage"
+> model drained the reserve by construction — see [REDESIGN.md](REDESIGN.md) §1 for the proof.
+> Ma'at now quotes **oracle mid ± spread per block** and **earns** the spread.
 
 ---
 
@@ -11,7 +15,7 @@ Tokenomics, Reserve Model, Supply Mechanics, and Revenue
 | Token | Type | Supply | Price Model |
 |-------|------|--------|-------------|
 | MAAT | Native coin (gas + gov) | Fixed: 1B | Free market |
-| wBTC/wETH/wUSDC | Wrapped assets | Demand-driven | Fixed protocol price |
+| wBTC/wETH/wUSDC | Wrapped assets | Demand-driven | **Oracle mid ± spread, fixed per block** |
 
 ## 2. MAAT Tokenomics
 
@@ -29,10 +33,13 @@ Tokenomics, Reserve Model, Supply Mechanics, and Revenue
 ### 2.2 Utility
 
 - **Gas**: Every transaction on Ma'at costs MAAT
-- **Governance**: Vote on price changes, reserve ratios, bridge params
+- **Governance**: Vote on spreads, reserve ratios, listings, bridge params
 - **Staking**: Validators stake MAAT for consensus
-- **Arb Fee Discount**: Stakers get reduced swap/bridge fees
-- **Reserve Backstop**: In emergencies, MAAT backs wrapped assets (gov vote)
+- **Fee Discount**: Stakers get reduced swap/bridge fees
+- **Spread Dividend**: A share of spread revenue can flow to stakers (gov-set)
+
+> Note: MAAT is **never** the backing for wrapped assets. Backing is always real assets
+> (1:1+). Using your own token as collateral is the Terra/UST reflexive trap.
 
 ## 3. The Reserve Model
 
@@ -45,9 +52,12 @@ wBTC minted = 100 --> 100 BTC held in reserve
 wETH minted = 500 --> 500 ETH held in reserve
 ```
 
+Because Ma'at trades at **mid ± spread** (not an off-market price), normal trading does
+not drain backing — it adds spread revenue to it.
+
 ### 3.2 Over-Collateralization Buffer
 
-10-20% over-collateralization for volatile assets:
+A buffer absorbs oracle lag and one-sided flow:
 
 ```
 wBTC: 1 BTC in circ -> 1.15 BTC in reserve (15% buffer)
@@ -59,27 +69,27 @@ stables: 1 USDC -> 1.02 USDC in reserve (2% buffer)
 
 1. On-chain multi-sig (7-of-12 from validator set)
 2. Gradual rebalancing - no large moves without announcement
-3. Transparency - reserve addresses published + verified monthly
-4. Insurance fund - 5% of all fees go to separate reserve
+3. Transparency - reserve addresses published + verified monthly (live dashboard)
+4. Insurance fund - 5% of all fees go to a separate reserve
 
 ## 4. Revenue Model
 
 | Source | Fee | Who Pays |
 |--------|-----|----------|
-| Swap fee (asset <-> MAAT) | 0.3% | Swapper |
+| **Spread (every swap)** | ~0.30% round-trip (mid ± 0.15%) | Trader |
 | Bridge-out fee (withdraw real asset) | 0.5% | Withdrawer |
 | Bridge-in fee (deposit real asset) | 0.1% | Depositor |
+| Remittance fee | 0.3% | Sender |
 | Validator commission | Variable | Delegators |
-| Treasury staking yield | From inflation | MAAT holders |
 
-### 4.1 Fee Distribution
+### 4.1 Fee/Spread Distribution
 
 ```
-Swap fee (0.3%):
-  40% -> Liquidity reserve
-  30% -> Validator rewards
+Spread + swap fees:
+  40% -> Reserve buffer (compounds backing)
+  25% -> Validator / staker rewards
   20% -> Insurance fund
-  10% -> Treasury
+  15% -> Treasury
 
 Bridge-out fee (0.5%):
   60% -> Reserve buffer
@@ -89,70 +99,74 @@ Bridge-out fee (0.5%):
 
 ## 5. Price Setting Mechanics
 
-### 5.1 Initial Price
+### 5.1 The Quote
 
-On launch, first prices are set:
-- wETH = Market ETH * 0.98 (2% below market)
+Each block, for each asset:
 
-### 5.2 Price Schedule
+```
+mid   = robust multi-source TWAP (the oracle)
+buy   = mid * (1 - spread)     # protocol buys the asset from users
+sell  = mid * (1 + spread)     # protocol sells the asset to users
+```
 
-Price changes follow a fixed schedule:
-1. Governance proposes new price schedule
-2. 7-day discussion period
-3. 7-day voting period
-4. If passed -> price changes at announced block height
+`spread` is governance-set per asset (default 0.15% each side), and **widens
+automatically** with volatility and inventory skew.
 
-### 5.3 Price Change Types
+### 5.2 Spread Schedule (predictability without giving money away)
 
-| Type | Description | Example |
+The protocol publishes its **spread curve and update cadence** in advance — users know
+exactly how pricing behaves. What is *not* pre-committed is a future off-market price
+(that would be writing free options to the market — see [REDESIGN.md](REDESIGN.md) §1.3).
+
+### 5.3 Spread Adjustment Types
+
+| Type | Description | Use Case |
 |------|-------------|---------|
-| Flat reprice | Move to new fixed price | wBTC $90K -> $95K |
-| Percentage shift | Move by X% | wBTC +5% |
-| Market-relative | Peg to market + offset | wBTC = Market - 2% |
-| Tiered | Different prices per volume | <1 BTC: $90K, >=1 BTC: $88K |
+| Flat spread | Fixed bps each side | Calm markets |
+| Volatility-scaled | Spread = base × volatility multiplier | Turbulent markets |
+| Inventory-skewed | Quote tilts to rebalance inventory | One-sided flow |
+| Emergency widen / freeze | Spread → large, or quotes paused 48h | Circuit breaker |
 
-## 6. The Arb Engine
+## 6. How Trading Affects the Reserve
 
-### 6.1 When Ma'at Price > Market Price
-
-```
-Market BTC = $100,000 | Ma'at wBTC = $110,000 (premium)
-  1. User buys 1 BTC on Binance ($100,000)
-  2. Bridges to Ma'at
-  3. Sells wBTC for 110,000 MAAT
-  4. Sells MAAT on market
-  Profit = ~$9,000
-```
-Effect: Real BTC flows INTO Ma'at. Reserve grows.
-
-### 6.2 When Ma'at Price < Market Price
+### 6.1 User buys wBTC (protocol sells)
 
 ```
-Market BTC = $100,000 | Ma'at wBTC = $90,000 (discount)
-  1. User buys MAAT on market
-  2. Sends 90,000 MAAT to Ma'at chain
-  3. Buys 1 wBTC at $90,000
-  4. Bridges out real BTC, sells at $100,000
-  Profit = ~$9,000
+Market mid = $100,000 | Ma'at sell = $100,150
+User pays 100,150 (in MAAT-equivalent) -> receives 1 wBTC
+Protocol releases 1 wBTC against backing, books +$150 spread
 ```
-Effect: Real BTC flows OUT. Reserve shrinks. MAAT burned.
 
-## 7. The Joseph Strategy (7 Plenty, 7 Famine)
+### 6.2 User sells wBTC (protocol buys)
 
-| Phase | Market | Ma'at Strategy |
+```
+Market mid = $100,000 | Ma'at buy = $99,850
+User delivers 1 wBTC -> receives 99,850
+Protocol acquires asset $150 below mid, books +$150 spread
+```
+
+Effect: **both directions add to the reserve.** The spread is the revenue; the oracle
+keeps it solvent.
+
+## 7. Behavior Across the Cycle (the honest "Joseph")
+
+| Phase | Market | Ma'at behavior |
 |-------|--------|----------------|
-| Bull | Prices rising | Ma'at rises SLOWER -> cheap buys -> MAAT demand soars |
-| Bear | Prices crashing | Ma'at falls SLOWER -> sell higher -> reserve accumulates |
+| Bull | Prices rising | Oracle tracks up; spread earned on heavy two-sided volume |
+| Bear | Prices crashing | Spread widens with volatility; reserve still earns, backing held |
+| Calm | Sideways | Tight spread, high volume, steady compounding |
 
-Result: In bull, Ma'at is best to BUY. In bear, best to SELL. Always the best venue.
+The grain-store discipline of Joseph applies to **reserves and insurance fund growth in
+good times to survive shocks** — not to quoting off-market prices.
 
 ## 8. Key Metrics
 
 | Metric | Target |
 |--------|--------|
-| Reserve Ratio | >= 110% |
+| Reserve Ratio | >= 110% (and growing) |
+| Reserve trend | **Up** (net of all flows) |
 | TVL | $100M+ at maturity |
 | Daily Volume | $10M+ at maturity |
-| Arb Spread | 1-10% (intentional) |
+| Effective spread | 0.10–0.50% (vol-dependent) |
 | MAAT MC | $50M+ at maturity |
 | Daily Revenue | $50K+ at maturity |

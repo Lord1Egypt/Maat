@@ -1,0 +1,56 @@
+name: CI — Economic Stop-Gate
+
+# The Phase 0 rule (BUILD_PLAN.md): no chain code ships until the simulation
+# proves the reserve GROWS. This pipeline enforces that on every push/PR —
+# if the spread-capture economics break, the build goes red.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  economics-gate:
+    name: Economics stop-gate (reserve must grow)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile-check (no syntax errors)
+        run: python -m py_compile simulation/maat_sim.py
+
+      - name: Run the economic stop-gate (1000 Monte Carlo paths)
+        # Exits non-zero if the reserve fails to grow in >=95% of paths,
+        # if backing ever breaks 100%, or if the flash-crash buffer fails.
+        run: python simulation/maat_sim.py --paths 1000 --seed 42
+
+  docs-integrity:
+    name: Docs integrity (no resurrected broken claims)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject uncorrected v0.1 claims
+        # The old "guaranteed risk-free arb / we are the oracle / no oracle"
+        # model was unsustainable. Fail CI if those claims reappear as live
+        # copy (warnings that reference/cite them are allowed).
+        run: |
+          set -e
+          BAD=$(grep -rniE "guaranteed (risk-free|unlimited) (profit|arb)|we are the oracle|no oracle needed" \
+                --include="*.md" . \
+            | grep -viE "REDESIGN|v0\.1|old |drain|replaced|instead of|no longer|removed|corrected|dropped|abandoned|WAS |reject|reappear|security|marketing|framing|don't promise|never market" \
+            || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Resurrected broken-model claim detected:"; echo "$BAD"; exit 1
+          fi
+          echo "Docs clean — no uncorrected v0.1 claims."

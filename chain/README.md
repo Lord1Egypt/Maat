@@ -17,6 +17,8 @@ it.
 | `pricing/market.go` | `x/market` + `x/reserve` | `MakeQuote` (mid ± vol/skew-adjusted spread, fixed per block), `BuyWrapped`/`SellWrapped` (spread accrual + backing checks), `BridgeIn`/`BridgeOut` (1:1 custody). |
 | `bridge/limits.go` | `x/bridge` | Bridge-out safety (Risk #1): rolling per-asset withdrawal cap + delay queue (large withdrawals held `DelayBlocks`, cancellable by governance). |
 | `treasury/fees.go` | `x/treasury` | Deterministic spread/fee distribution (ECONOMICS.md splits); rounding remainder → reserve so no micro-unit leaks. |
+| `scenario/scenario.go` | (integration) | Wires all cores through a deterministic multi-block run; asserted by `scenario_test.go`. |
+| `cmd/demo/main.go` | (demo) | `go run ./cmd/demo` — runnable end-to-end proof the cores work together. |
 
 Units: prices in **micro-USD** (1 USD = 1_000_000), spreads/ratios in **bps**.
 
@@ -26,6 +28,10 @@ Units: prices in **micro-USD** (1 USD = 1_000_000), spreads/ratios in **bps**.
 cd chain
 go vet ./...
 go test ./... -v
+go run ./cmd/demo      # human-readable end-to-end proof
+
+# or from the repo root, run EVERYTHING (Go + economic gate):
+make test
 ```
 
 ## How the Cosmos keepers will use it (integration sketch)

@@ -35,7 +35,8 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #3 | `docs:` STATUS.md continuation/handoff doc | ✅ Merged |
 | #4 | `feat:` calibration vs real ETH data + real-data CI gate | ✅ Merged |
 | #5 | `feat:` deterministic Go pricing core (x/oracle + x/market) + Go CI | ✅ Merged |
-| #6 | `feat:` bridge withdrawal caps/delay queue + treasury fee splits | ⏳ This PR |
+| #6 | `feat:` bridge withdrawal caps/delay queue + treasury fee splits | ✅ Merged |
+| #7 | `feat:` end-to-end integration scenario + demo + `make test` runner | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
@@ -81,7 +82,10 @@ both models:
     + backing checks; 1:1 bridge in/out). Decoupled from the SDK so it's fully testable.
   - ✅ Protection cores (Go, tested): `bridge/limits.go` (per-asset withdrawal cap + delay
     queue with cancel — Risk #1) and `treasury/fees.go` (ECONOMICS fee splits, leak-free).
-    All 3 packages green in CI (`go test ./...`).
+  - ✅ Integration: `chain/scenario` wires oracle+market+treasury+bridge through a 720-block
+    deterministic run (test asserts backing ≥100%, spread captured, fund split, cap throttles);
+    `chain/cmd/demo` is the runnable proof; `make test` runs Go + the economic gate in one shot.
+    Demo result: backing held 100%, ~$21.6k spread captured, 60/240 bridge-outs throttled.
   - ⏭️ NEXT: wrap the cores in actual Cosmos SDK modules — proto/Msg types, keepers, genesis,
     params, EndBlock oracle wiring — then the `x/bridge` Wormhole transport. These are
     mechanical wrappers around the verified cores. A full SDK chain can't be compiled/verified

@@ -1,18 +1,28 @@
 package app
 
 import (
+	"encoding/json"
 	"io"
+	"os"
+	"path/filepath"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
+	"cosmossdk.io/x/evidence"
+	evidencekeeper "cosmossdk.io/x/evidence/keeper"
+	evidencetypes "cosmossdk.io/x/evidence/types"
+	"cosmossdk.io/x/upgrade"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	serverapi "github.com/cosmos/cosmos-sdk/server/api"
 	apiConfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -20,20 +30,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
+	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"cosmossdk.io/x/evidence"
-	evidencekeeper "cosmossdk.io/x/evidence/keeper"
-	evidencetypes "cosmossdk.io/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -48,9 +59,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"cosmossdk.io/x/upgrade"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
@@ -81,6 +89,14 @@ import (
 
 const AppName = "MaatApp"
 
+func init() {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	DefaultNodeHome = filepath.Join(userHome, ".maat")
+}
+
 var (
 	DefaultNodeHome string
 
@@ -94,6 +110,7 @@ var (
 		slashing.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
+		consensus.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		distr.AppModuleBasic{},
 		maatmodule.AppModule{},
@@ -112,7 +129,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		maattypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
-		bridgetypes.ModuleName:          {authtypes.Minter, authtypes.Burner},
+		bridgetypes.ModuleName:         {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -135,6 +152,7 @@ type MaatApp struct {
 	CrisisKeeper     *crisiskeeper.Keeper
 	UpgradeKeeper    *upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
+	ConsensusKeeper  consensuskeeper.Keeper
 	EvidenceKeeper   evidencekeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
 
@@ -145,7 +163,8 @@ type MaatApp struct {
 	BridgeKeeper   bridgekeeper.Keeper
 	TreasuryKeeper treasurykeeper.Keeper
 
-	mm *module.Manager
+	mm                 *module.Manager
+	BasicModuleManager module.BasicManager
 }
 
 func New(
@@ -175,6 +194,7 @@ func New(
 		upgradetypes.StoreKey,
 		evidencetypes.StoreKey,
 		paramstypes.StoreKey,
+		consensustypes.StoreKey,
 		capabilitytypes.StoreKey,
 		maattypes.StoreKey,
 		oracletypes.StoreKey,
@@ -196,6 +216,15 @@ func New(
 	}
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
+
+	// x/consensus manages CometBFT consensus params; baseapp reads them via the param store.
+	app.ConsensusKeeper = consensuskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[consensustypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.ProvideEventService(),
+	)
+	bApp.SetParamStore(app.ConsensusKeeper.ParamsStore)
 
 	addrPrefix := sdk.GetConfig().GetBech32AccountAddrPrefix()
 	addressCodec := address.NewBech32Codec(addrPrefix)
@@ -247,6 +276,16 @@ func New(
 		runtime.NewKVStoreService(keys[slashingtypes.StoreKey]),
 		app.StakingKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Wire staking hooks so distribution + slashing react to validator/delegation
+	// changes. Without this, slashing never records validator signing info and the
+	// node hits "no validator signing info found" at FinalizeBlock.
+	app.StakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(
+			app.DistrKeeper.Hooks(),
+			app.SlashingKeeper.Hooks(),
+		),
 	)
 
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
@@ -334,6 +373,7 @@ func New(
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, nil),
 		crisis.NewAppModule(app.CrisisKeeper, false, nil),
 		params.NewAppModule(app.ParamsKeeper),
+		consensus.NewAppModule(appCodec, app.ConsensusKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		maatmodule.NewAppModule(app.MaatKeeper),
@@ -357,6 +397,7 @@ func New(
 		banktypes.ModuleName,
 		genutiltypes.ModuleName,
 		paramstypes.ModuleName,
+		consensustypes.ModuleName,
 		maattypes.ModuleName,
 		oracletypes.ModuleName,
 		markettypes.ModuleName,
@@ -378,6 +419,7 @@ func New(
 		genutiltypes.ModuleName,
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
+		consensustypes.ModuleName,
 		maattypes.ModuleName,
 		oracletypes.ModuleName,
 		markettypes.ModuleName,
@@ -387,6 +429,7 @@ func New(
 	)
 
 	app.mm.SetOrderInitGenesis(
+		consensustypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -407,11 +450,52 @@ func New(
 		treasurytypes.ModuleName,
 	)
 
+	// Basic manager derived from the constructed modules — its AppModuleBasics carry
+	// real codecs, so CLI tx/query command builders (e.g. staking) don't nil-panic.
+	// NOTE: interfaces/amino are already registered on the shared registry by
+	// MakeEncodingConfig (via the global ModuleBasics); re-registering here would
+	// double-register Msg types (e.g. MsgCreateValidator) and panic. This manager
+	// is used only to build CLI tx/query commands with codec-bearing module basics.
+	app.BasicModuleManager = module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+			govtypes.ModuleName:     gov.NewAppModuleBasic(nil),
+		},
+	)
+
 	app.mm.RegisterInvariants(app.CrisisKeeper)
+
+	// Register all module Msg/Query services on the routers — without this, txs like
+	// MsgCreateValidator (gentx) have "no message handler found" and InitChain panics.
+	if err := app.mm.RegisterServices(module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())); err != nil {
+		panic(err)
+	}
+
+	// PreBlock runs the upgrade module's scheduled-upgrade check before each block.
+	app.mm.SetOrderPreBlockers(upgradetypes.ModuleName)
 
 	if err := app.RegisterStores(keys, tkeys); err != nil {
 		panic(err)
 	}
+
+	// ABCI lifecycle wiring: without these the node cannot init genesis or produce blocks.
+	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
+	app.SetBeginBlocker(app.BeginBlocker)
+	app.SetEndBlocker(app.EndBlocker)
+
+	anteHandler, err := ante.NewAnteHandler(ante.HandlerOptions{
+		AccountKeeper:   app.AccountKeeper,
+		BankKeeper:      app.BankKeeper,
+		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+		FeegrantKeeper:  nil,
+		SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+	})
+	if err != nil {
+		panic(err)
+	}
+	app.SetAnteHandler(anteHandler)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -422,16 +506,41 @@ func New(
 	return app
 }
 
+// InitChainer initializes module genesis state and records module versions.
+func (app *MaatApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	var genesisState map[string]json.RawMessage
+	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		return nil, err
+	}
+	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()); err != nil {
+		return nil, err
+	}
+	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+}
+
+// PreBlocker runs module PreBlock hooks (upgrade scheduling).
+func (app *MaatApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	return app.mm.PreBlock(ctx)
+}
+
+// BeginBlocker runs all module BeginBlock hooks (incl. x/maat block-reward mint).
+func (app *MaatApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	return app.mm.BeginBlock(ctx)
+}
+
+// EndBlocker runs all module EndBlock hooks (incl. x/oracle aggregation, x/market health).
+func (app *MaatApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	return app.mm.EndBlock(ctx)
+}
+
 func (app *MaatApp) RegisterStores(
 	keys map[string]*storetypes.KVStoreKey,
 	tkeys map[string]*storetypes.TransientStoreKey,
 ) error {
-	for _, key := range keys {
-		app.MountKVStores(storetypes.NewKVStoreKeys(key.Name()))
-	}
-	for _, tkey := range tkeys {
-		app.MountTransientStores(storetypes.NewTransientStoreKeys(tkey.Name()))
-	}
+	// Mount the exact key objects the keepers hold — re-creating keys with the same
+	// name would mount stores under different pointers, breaking ctx.KVStore() lookups.
+	app.MountKVStores(keys)
+	app.MountTransientStores(tkeys)
 	return nil
 }
 

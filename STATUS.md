@@ -4,8 +4,8 @@
 > reset, or a weekly-limit interruption). It captures where we are, what was decided
 > and why, and exactly what to do next.
 
-**Last updated:** 2026-06-18
-**Phase:** 2 (Cosmos SDK Chain) — **COMPLETE**, all modules and keepers scaffolded and 100% verified by keeper unit tests.
+**Last updated:** 2026-06-19
+**Phase:** 2 (Cosmos SDK Chain) — **COMPLETE + the node now actually BOOTS and PRODUCES BLOCKS.** All modules/keepers scaffolded, app boot wiring fixed, verified end-to-end (init → validator → sustained finalized blocks; 33+ blocks in a live run).
 
 ---
 
@@ -41,10 +41,54 @@ Full proof and reasoning: [REDESIGN.md](REDESIGN.md).
 | #9 | `test:` Go fuzz tests for safety invariants | ✅ Merged |
 | #10 | `feat:` MAAT token core (x/maat) — vesting + inflation | ✅ Merged |
 | #11 | `docs:` x/* module integration spec (SDK wiring guide) | ✅ Merged |
-| #12 | `feat:` governance tally core (x/gov) | ⏳ This PR |
+| #12 | `feat:` governance tally core (x/gov) | ✅ Merged |
+| #13 | `docs:` README CI badge + verification section | ✅ Merged |
+| #14 | `feat:` scaffold Cosmos SDK v0.50 modules wrapping the verified cores | ✅ Merged |
+| #15 | `feat:` Wormhole VAA parser + x/bridge BridgeIn integration | ✅ Merged |
+| #16 | `feat:` Phase 4–7 — dashboard, feeder daemon, reserve index, Pharaoh Bonds, testnet, Arabic remittance | ✅ Merged |
+| #17 | `fix:` **make the node actually boot & produce blocks** (app ABCI wiring + CLI) | ⏳ This PR |
 
 **Workflow in use:** branch → PR → merge (never direct push to `main`). CI must be green
 before merge.
+
+### PR #17 — node boot wiring (the gap between "compiles" and "runs")
+
+The SDK scaffold (#14–#16) compiled and passed keeper unit tests, but the binary
+could not boot a chain. Fixed and **verified by running** (`scripts/testnet-up.sh`
+brings up a single-validator localnet that finalizes blocks continuously):
+
+1. **`maatd` panicked on every command** — `client.Context` built without `.WithViper("")`
+   (nil Viper in `ReadFromClientConfig`). Also added `initAppConfig`/`initCometBFTConfig`
+   so `InterceptConfigsPreRunHandler` gets non-nil defaults.
+2. **No client/genesis commands** — `root.go` only had `server.AddCommands`. Added
+   `init`, `genesis`, `keys`, `tx`, `query`, `status`, derived from a pre-instantiated
+   app's `BasicModuleManager` (so staking/gov CLI builders get real codecs).
+3. **No ABCI lifecycle in `app.go`** — added `InitChainer`, `PreBlocker`, `BeginBlocker`,
+   `EndBlocker`, and the `AnteHandler`, plus `SetOrderPreBlockers`. Without these the
+   module BeginBlock/EndBlock (x/maat mint, x/oracle, x/market) never ran and `InitChain`
+   panicked on a nil chainer.
+4. **Missing `x/consensus`** — required in SDK 0.50; added the module + `SetParamStore`,
+   else `InitChain` panics storing consensus params.
+5. **`RegisterStores` mounted fresh key objects** instead of the keepers' own keys →
+   runtime `ctx.KVStore()` lookups would fail. Now mounts the real maps.
+6. **`MakeEncodingConfig` had no address codecs** in the interface registry's signing
+   options → `gentx` failed ("requires a proper address codec"). Rebuilt with
+   `NewInterfaceRegistryWithOptions`.
+7. **`DefaultNodeHome` was empty** (no `init()`) → CometBFT `mkdir ""`. Set to `~/.maat`.
+8. **`mm.RegisterServices` was never called** → `MsgCreateValidator` had "no message
+   handler" and InitChain panicked delivering the gentx. Now registered.
+9. **Staking hooks never wired** → slashing had "no validator signing info found" and the
+   node hit a CONSENSUS FAILURE at height 2. Added `StakingKeeper.SetHooks(distr, slashing)`.
+10. **`newApp` didn't pass `server.DefaultBaseappOptions`** → baseapp chainID empty →
+    "invalid chain-id on InitChain". Now wired (pruning/snapshots/min-gas/SetChainID).
+
+Guards added: `app.TestAppInitChainPipeline` (drives InitChain through every module's
+genesis), a new CI `sdk-app` job (builds the whole chain + runs boot/keeper tests), and
+`scripts/testnet-up.sh` rewritten to the full verified flow.
+
+**Known follow-up (not blocking):** module `query`/`tx` CLI subcommands need AutoCLI
+(`cosmossdk.io/client/v2`), which would add a new dependency. The gRPC/REST query
+services ARE registered, so querying works over those today.
 
 ---
 

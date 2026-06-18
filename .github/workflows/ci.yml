@@ -50,12 +50,30 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "1.23"
       - name: Vet + test the deterministic pricing core
         working-directory: chain
         run: |
           go vet ./...
           go test ./... -count=1
+
+  sdk-app:
+    name: SDK app (build + boot tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: Build the whole chain (incl. maatd binary)
+        run: go build ./...
+      - name: Vet + test app boot pipeline and module keepers
+        # TestAppInitChainPipeline drives InitChain through every module's
+        # InitGenesis; the keeper tests cover module state transitions.
+        run: |
+          go vet ./...
+          go test ./app/... ./x/... -count=1
 
   docs-integrity:
     name: Docs integrity (no resurrected broken claims)

@@ -2,3 +2,14 @@ __pycache__/
 *.pyc
 charts/
 calibrated_params.json
+
+# Go build output
+/maatd
+*.test
+
+# Local node homes / runtime artifacts (created by maatd init / testnet-up.sh)
+/config/
+/data/
+/localnode/
+/localnet/
+*.log

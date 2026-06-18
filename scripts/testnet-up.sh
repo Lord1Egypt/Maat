@@ -1,60 +1,70 @@
 #!/bin/bash
-set -e
+#
+# testnet-up.sh — bring up a single-node Ma'at localnet from scratch and start it.
+#
+# This is the full, verified flow: init -> key -> genesis account -> gentx ->
+# collect-gentxs -> validate-genesis -> (optional custom params) -> start.
+# Without the validator (gentx) steps a chain cannot produce blocks.
+#
+# Usage:
+#   scripts/testnet-up.sh            # build genesis, then `maatd start`
+#   START=0 scripts/testnet-up.sh    # build + validate genesis only, don't start
+#
+set -euo pipefail
 
-# Initialize home folder
-maatd init localnode --chain-id maat-testnet-1 --home ./localnode --overwrite
+BIN="${BIN:-maatd}"
+HOME_DIR="${HOME_DIR:-$(pwd)/localnode}"
+CHAIN_ID="${CHAIN_ID:-maat-testnet-1}"
+DENOM="${DENOM:-umaat}"
+KEYRING="${KEYRING:-test}"
+MONIKER="${MONIKER:-localnode}"
+START="${START:-1}"
 
-# Build genesis modifications using python
-python3 -c '
-import json
+echo ">>> Resetting $HOME_DIR"
+rm -rf "$HOME_DIR"
 
-genesis_path = "./localnode/config/genesis.json"
-with open(genesis_path, "r") as f:
-    gen = json.load(f)
+echo ">>> init"
+"$BIN" init "$MONIKER" --chain-id "$CHAIN_ID" --home "$HOME_DIR" --default-denom "$DENOM" --overwrite >/dev/null
 
-# Update x/oracle params
-gen["app_state"]["oracle"] = {
-    "params": {
-        "alpha_num": 8,
-        "alpha_den": 10,
-        "max_dev_bps": 500,
-        "break_bps": 5000,
-        "vote_period": 1
-    },
-    "feeders": ["maat1valoper1", "maat1valoper2"]
-}
+echo ">>> create validator key"
+"$BIN" keys add validator --keyring-backend "$KEYRING" --home "$HOME_DIR" >/dev/null
+VAL_ADDR="$("$BIN" keys show validator -a --keyring-backend "$KEYRING" --home "$HOME_DIR")"
+echo "    validator: $VAL_ADDR"
 
-# Update x/market params
-gen["app_state"]["market"] = {
-    "params": {
-        "base_bps": 15,
-        "vol_mult_bps": 50,
-        "skew_max_bps": 100,
-        "max_bps": 1000
-    }
-}
+echo ">>> fund genesis account"
+"$BIN" genesis add-genesis-account "$VAL_ADDR" "1000000000${DENOM}" --home "$HOME_DIR"
 
-# Update x/bridge params
-gen["app_state"]["bridge"] = {
-    "params": {
-        "daily_cap_units": 1000000000,
-        "window_blocks": 14400,
-        "large_tx_units": 50000000,
-        "delay_blocks": 14400
-    }
-}
+echo ">>> apply custom Ma'at module params"
+# NOTE: oracle/market/bridge serialize Go field names (no json tags); maat uses
+# snake_case json tags. Keys below match the actual genesis schema produced by init.
+python3 - "$HOME_DIR/config/genesis.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+gen = json.load(open(path))
+st = gen["app_state"]
+st["oracle"]["params"] = {"AlphaNum": 8, "AlphaDen": 10, "MaxDevBps": 500, "BreakBps": 5000, "VotePeriod": 1}
+st["market"]["params"] = {"BaseBps": 15, "VolMultBps": 50, "SkewMaxBps": 100, "MaxBps": 1000}
+st["bridge"]["params"] = {"DailyCapUnits": 1000000000, "WindowBlocks": 14400, "LargeTxUnits": 50000000, "DelayBlocks": 14400}
+st["maat"]["params"] = {"annual_inflation_bps": 800, "blocks_per_year": 5256000}
+json.dump(gen, open(path, "w"), indent=2)
+print("    custom params written")
+PY
 
-# Update x/maat params
-gen["app_state"]["maat"] = {
-    "params": {
-        "annual_inflation_bps": 800,
-        "blocks_per_year": 5256000,
-        "vesting_start": 100000
-    }
-}
+echo ">>> gentx (self-delegate 500 MAAT)"
+"$BIN" genesis gentx validator "500000000${DENOM}" --chain-id "$CHAIN_ID" --keyring-backend "$KEYRING" --home "$HOME_DIR" >/dev/null
 
-with open(genesis_path, "w") as f:
-    json.dump(gen, f, indent=2)
-'
+echo ">>> collect-gentxs"
+"$BIN" genesis collect-gentxs --home "$HOME_DIR" >/dev/null
 
-echo "Local genesis configured successfully with custom Ma'at parameters."
+echo ">>> validate-genesis"
+"$BIN" genesis validate-genesis --home "$HOME_DIR"
+
+echo ""
+echo "Local genesis ready at $HOME_DIR with custom Ma'at parameters."
+
+if [ "$START" = "1" ]; then
+  echo ">>> starting node (Ctrl-C to stop)"
+  exec "$BIN" start --home "$HOME_DIR" --minimum-gas-prices "0${DENOM}"
+else
+  echo "To start: $BIN start --home $HOME_DIR --minimum-gas-prices 0${DENOM}"
+fi

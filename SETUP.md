@@ -2,30 +2,43 @@
 
 ## Prerequisites
 
-- Go 1.22+
-- `protoc` (Protocol Buffers compiler)
-- `buf` (recommended) or `grpc-gateway` protoc plugins
+- Go 1.23+
 
-## Quick Start
+> The module `types` are hand-written Go (not generated from the `.proto` files),
+> so **no `protoc`/`buf` step is required to build or run the chain**. The `proto/`
+> files document the intended wire schema for a future codegen pass.
+
+## Quick Start (one command)
+
+The fastest path — `scripts/testnet-up.sh` runs the full, verified bring-up
+(init → key → genesis account → gentx → collect → validate → start):
 
 ```bash
-# 1. Install dependencies
-go mod tidy
+go build -o maatd ./cmd/maatd
+PATH="$PWD:$PATH" scripts/testnet-up.sh        # builds genesis, then starts the node
+# or: START=0 scripts/testnet-up.sh            # build + validate genesis only
+```
 
-# 2. Generate protobuf code (if using buf)
-buf generate
+This was verified end-to-end: the node boots, the validator bonds, and blocks
+finalize continuously (see the `app` package `TestAppInitChainPipeline` and the
+CI `sdk-app` job for the automated guards).
 
-# 3. Build the chain binary
+## Quick Start (manual steps)
+
+```bash
+# 1. Build the chain binary
 go build -o maatd ./cmd/maatd
 
-# 4. Initialize a single-validator testnet
-./maatd init test-node --chain-id maat-testnet-1
-./maatd genesis add-genesis-account maat1... 1000000000umaat
-./maatd genesis gentx val1 100000000umaat --chain-id maat-testnet-1
+# 2. Initialize a single-validator testnet
+./maatd init test-node --chain-id maat-testnet-1 --default-denom umaat
+./maatd keys add validator --keyring-backend test
+./maatd genesis add-genesis-account "$(./maatd keys show validator -a --keyring-backend test)" 1000000000umaat
+./maatd genesis gentx validator 500000000umaat --chain-id maat-testnet-1 --keyring-backend test
 ./maatd genesis collect-gentxs
+./maatd genesis validate-genesis
 
-# 5. Start the chain
-./maatd start
+# 3. Start the chain
+./maatd start --minimum-gas-prices 0umaat
 ```
 
 ## Architecture
